@@ -43,17 +43,17 @@ export interface AnalysisRun {
 }
 
 // Mock Data Generators
-const MORTGAGE_TITLES = [
-  "2023 Mortgage Rates Guide - Best Lenders",
-  "How to Refinance Your Home Loan",
-  "First-Time Home Buyer Programs in California",
-  "Current CD Rates: October 2022",
-  "VA Loan Requirements and Limits",
-  "FHA Loan Guidelines for 2020",
-  "Jumbo Loan Rates and Requirements",
-  "HELOC vs Home Equity Loan",
-  "USDA Loan Map and Income Limits",
-  "Closing Costs Calculator 2021"
+const NURSE_TITLES = [
+  "2025 Travel Nurse Salary Guide",
+  "Highest Paying States for Travel Nurses",
+  "Travel Nursing Specialties Pay Breakdown",
+  "Understanding Travel Nurse Pay Packages",
+  "ICU Travel Nurse Salary Trends",
+  "ER Travel Nurse Pay Rates 2024",
+  "Travel Nurse Housing Stipends Explained",
+  "Tax Rules for Travel Nurses",
+  "Best Agencies for High Pay",
+  "Travel Nursing Outlook 2026"
 ];
 
 const GENERIC_TITLES = [
@@ -64,31 +64,31 @@ const GENERIC_TITLES = [
   "Contact Support"
 ];
 
-const MORTGAGE_ISSUES = [
+const NURSE_ISSUES = [
   {
-    description: "Outdated interest rate reference",
-    flaggedText: "Current mortgage rates are hovering around 3.5% for a 30-year fixed loan.",
-    reasoning: "Market data indicates current rates are significantly higher (approx. 6-7%) as of late 2023/2024."
+    description: "Outdated salary source",
+    flaggedText: "According to 2023 Bureau of Labor Statistics data, the average pay is...",
+    reasoning: "Source is from 2023, which is older than the 2024 cutoff for this review."
   },
   {
     description: "Stale year reference",
-    flaggedText: "As we move into 2022, buyers should prepare for...",
-    reasoning: "Content refers to 2022 as the future/current year, indicating the page hasn't been updated in 2+ years."
+    flaggedText: "Looking ahead to 2024, we expect rates to stabilize.",
+    reasoning: "Content refers to 2024 as the future, but current context is late 2025."
   },
   {
-    description: "Expired program deadline",
-    flaggedText: "Applications for this grant must be submitted by December 31, 2021.",
-    reasoning: "The deadline mentioned has passed, making this actionable advice invalid for current users."
+    description: "Old stipend data",
+    flaggedText: "The GSA housing stipend for this location is currently $1,200/month (2022 rates).",
+    reasoning: "Stipend rates are from 2022 and likely inaccurate for 2025."
   },
   {
-    description: "Old regulatory limit",
-    flaggedText: "The conforming loan limit for 2021 is $548,250.",
-    reasoning: "Conforming loan limits have increased annually. The 2024 limit is $766,550."
+    description: "Expired contract example",
+    flaggedText: "Example pay package for start date Jan 2024.",
+    reasoning: "Example is nearly 2 years old and may not reflect current market conditions."
   },
   {
-    description: "Broken or deprecated product link",
-    flaggedText: "Check out the Wells Fargo Propel American Express card.",
-    reasoning: "This specific product has been discontinued and is no longer available for new applicants."
+    description: "Deprecated certification requirement",
+    flaggedText: "Requires AHA BLS certification (2020 guidelines).",
+    reasoning: "Guidelines were updated in 2025, making this reference potentially obsolete."
   }
 ];
 
@@ -270,7 +270,7 @@ class MockService {
       const pageIssues: Issue[] = [];
 
       for (let i = 0; i < numIssues; i++) {
-        const randomIssue = MORTGAGE_ISSUES[Math.floor(Math.random() * MORTGAGE_ISSUES.length)];
+        const randomIssue = NURSE_ISSUES[Math.floor(Math.random() * NURSE_ISSUES.length)];
         pageIssues.push({
           id: generateId(),
           ...randomIssue
@@ -278,7 +278,7 @@ class MockService {
       }
 
       // Select title based on URL if possible, or random mortgage title
-      let title = MORTGAGE_TITLES[index % MORTGAGE_TITLES.length];
+      let title = NURSE_TITLES[index % NURSE_TITLES.length];
       if (url.includes('about')) title = GENERIC_TITLES[0];
       if (url.includes('privacy')) title = GENERIC_TITLES[1];
 
@@ -338,4 +338,5 @@ class MockService {
 }
 
 export const mockService = new MockService();
+
 

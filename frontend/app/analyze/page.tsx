@@ -36,14 +36,14 @@ export default function AnalyzePage() {
 
   const handleFillDemoData = () => {
     setUrls(
-      "https://example.com/mortgage-rates-2024\n" +
-      "https://example.com/first-time-home-buyer-guide\n" +
-      "https://example.com/refinance-calculator\n" +
-      "https://example.com/va-loan-requirements"
+      "https://example.com/travel-nurse-salary-guide-2025\n" +
+      "https://example.com/highest-paying-states-travel-nursing\n" +
+      "https://example.com/travel-nursing-specialties-pay\n" +
+      "https://example.com/understanding-travel-nurse-pay-packages"
     );
-    setDescription("Mortgage lending and home financing advice for US borrowers");
-    setEntityTypes("Interest rates, loan limits, FHA/VA guidelines, tax deadlines");
-    setStalenessRules("Rates older than 1 month, references to 2023 or earlier, expired program deadlines");
+    setDescription("Travel nurse salaries in 2025");
+    setEntityTypes("Ensure all sited sources are current to within 1 year of today (today being dec 20 2025)");
+    setStalenessRules("salary data sources cited older than 2024");
     toast.success('Demo data filled');
   };
 
@@ -209,6 +209,7 @@ export default function AnalyzePage() {
     </div>
   );
 }
+
 
 
 
