@@ -1,4 +1,5 @@
-import { v4 as uuidv4 } from 'uuid';
+// Simple ID generator to avoid external dependencies
+const generateId = () => Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 
 // Types
 export interface User {
@@ -195,7 +196,7 @@ class MockService {
     const contexts = this.getDomainContexts();
     const newContext = {
       ...context,
-      id: uuidv4(),
+      id: generateId(),
       timestamp: Date.now()
     };
     
@@ -216,7 +217,7 @@ class MockService {
     const user = this.getCurrentUser();
     if (!user) throw new Error("User not authenticated");
 
-    const runId = uuidv4();
+    const runId = generateId();
     
     // Create initial run entry
     const newRun: AnalysisRun = {
@@ -263,7 +264,7 @@ class MockService {
       for (let i = 0; i < numIssues; i++) {
         const randomIssue = MOCK_ISSUES[Math.floor(Math.random() * MOCK_ISSUES.length)];
         pageIssues.push({
-          id: uuidv4(),
+          id: generateId(),
           ...randomIssue
         });
       }
@@ -324,4 +325,3 @@ class MockService {
 }
 
 export const mockService = new MockService();
-
