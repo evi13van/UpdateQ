@@ -58,13 +58,13 @@ export default function AnalyzePage() {
         stalenessRules
       });
 
-      // Start Analysis
+      // Start Review
       const runId = await mockService.startAnalysis(urlList, context);
       
       // Redirect to processing
       router.push(`/analyze/processing/${runId}`);
     } catch (error) {
-      toast.error('Failed to start analysis');
+      toast.error('Failed to start review');
       console.error(error);
     }
   };
@@ -72,8 +72,10 @@ export default function AnalyzePage() {
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white mb-2">New Analysis</h1>
-        <p className="text-slate-400">Configure your scan settings and submit URLs for freshness checking.</p>
+        <h1 className="text-3xl font-bold text-white mb-2">New Review</h1>
+        <p className="text-slate-400">
+          Define your content context and let our AI agent help you identify what needs updating.
+        </p>
       </div>
 
       <div className="grid gap-8">
@@ -85,7 +87,7 @@ export default function AnalyzePage() {
               Target URLs
             </CardTitle>
             <CardDescription>
-              Enter up to 20 URLs to analyze (one per line).
+              Enter up to 20 URLs to review (one per line).
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -111,7 +113,7 @@ export default function AnalyzePage() {
                 Domain Context
               </CardTitle>
               <CardDescription>
-                Help the AI understand what &quot;stale&quot; means for your content.
+                Help the AI agent understand your content so it can accurately flag stale information.
               </CardDescription>
             </div>
             
@@ -180,7 +182,7 @@ export default function AnalyzePage() {
 
         <div className="flex justify-end">
           <Button size="lg" onClick={handleSubmit} className="w-full md:w-auto shadow-lg shadow-emerald-500/20">
-            Start Analysis
+            Start Review
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </div>
@@ -188,4 +190,5 @@ export default function AnalyzePage() {
     </div>
   );
 }
+
 
