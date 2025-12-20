@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { mockService, DomainContext } from '@/lib/mock-service';
 import { toast } from 'react-hot-toast';
-import { ArrowRight, History, Save } from 'lucide-react';
+import { ArrowRight, History, Save, Wand2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 export default function AnalyzePage() {
@@ -32,6 +32,19 @@ export default function AnalyzePage() {
     setEntityTypes(context.entityTypes);
     setStalenessRules(context.stalenessRules);
     toast.success('Configuration loaded');
+  };
+
+  const handleFillDemoData = () => {
+    setUrls(
+      "https://example.com/mortgage-rates-2024\n" +
+      "https://example.com/first-time-home-buyer-guide\n" +
+      "https://example.com/refinance-calculator\n" +
+      "https://example.com/va-loan-requirements"
+    );
+    setDescription("Mortgage lending and home financing advice for US borrowers");
+    setEntityTypes("Interest rates, loan limits, FHA/VA guidelines, tax deadlines");
+    setStalenessRules("Rates older than 1 month, references to 2023 or earlier, expired program deadlines");
+    toast.success('Demo data filled');
   };
 
   const handleSubmit = async () => {
@@ -90,8 +103,14 @@ export default function AnalyzePage() {
               Enter up to 20 URLs to review (one per line).
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <Textarea 
+          <CardContent className="space-y-4">
+            <div className="flex justify-end">
+              <Button variant="ghost" size="sm" onClick={handleFillDemoData} className="text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10">
+                <Wand2 className="mr-2 h-3 w-3" />
+                Fill Demo Data
+              </Button>
+            </div>
+            <Textarea  
               placeholder="https://example.com/page-1&#10;https://example.com/page-2"
               className="min-h-[200px] font-mono text-sm"
               value={urls}
@@ -190,5 +209,6 @@ export default function AnalyzePage() {
     </div>
   );
 }
+
 
 
