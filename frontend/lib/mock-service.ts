@@ -92,6 +92,47 @@ const NURSE_ISSUES = [
   }
 ];
 
+const WEB3_TITLES = [
+  "Top Crypto Exchanges for 2022",
+  "Best NFT Marketplaces for Creators",
+  "Web3 Developer Tools Guide",
+  "DeFi Yield Farming Strategies",
+  "Solana Wallet Comparison",
+  "Ethereum Gas Fee Optimization",
+  "DAO Governance Tools Review",
+  "Layer 2 Scaling Solutions 2021",
+  "Metaverse Land Buying Guide",
+  "Crypto Tax Software Reviews"
+];
+
+const WEB3_ISSUES = [
+  {
+    description: "Dangerous recommendation",
+    flaggedText: "We highly recommend FTX for its low fees and high security.",
+    reasoning: "FTX collapsed in late 2022 and is no longer a functioning or safe exchange."
+  },
+  {
+    description: "Deprecated network reference",
+    flaggedText: "Deploy your contract to the Ropsten testnet first.",
+    reasoning: "Ropsten testnet was deprecated in late 2022. Use Sepolia or Goerli instead."
+  },
+  {
+    description: "Outdated gas fee data",
+    flaggedText: "Expect to pay around 100-200 gwei for a simple transfer.",
+    reasoning: "Current gas fees are significantly lower (10-30 gwei) due to market conditions and L2 adoption."
+  },
+  {
+    description: "Stale project status",
+    flaggedText: "Anchor Protocol offers stable 20% APY on UST.",
+    reasoning: "Terra/Luna ecosystem collapsed in May 2022; this protocol is defunct."
+  },
+  {
+    description: "Old roadmap reference",
+    flaggedText: "Ethereum 2.0 merge is expected in late 2022.",
+    reasoning: "The Merge successfully happened in Sept 2022; terminology 'Eth2' is also deprecated."
+  }
+];
+
 // Service Class
 class MockService {
   // User Auth
@@ -116,16 +157,16 @@ class MockService {
     const mariaRuns = allRuns.filter(r => r.userId === userId);
 
     if (mariaRuns.length === 0) {
-      // Create a sample completed run
-      const sampleRun: AnalysisRun = {
-        id: 'run_sample_maria',
+      // Create a sample completed run (Mortgage)
+      const mortgageRun: AnalysisRun = {
+        id: 'run_sample_maria_1',
         userId: userId,
         timestamp: Date.now() - 1000 * 60 * 60 * 24 * 2, // 2 days ago
         urlCount: 5,
         totalIssues: 3,
         status: 'completed',
         domainContext: {
-          id: 'ctx_sample',
+          id: 'ctx_sample_1',
           description: 'Mortgage Rates and Loan Guides',
           entityTypes: 'Interest rates, loan limits, deadlines',
           stalenessRules: 'Rates older than 1 month, 2022 references',
@@ -174,14 +215,68 @@ class MockService {
         ]
       };
 
-      this.saveRun(sampleRun);
+      // Create a sample completed run (Web3)
+      const web3Run: AnalysisRun = {
+        id: 'run_sample_maria_2',
+        userId: userId,
+        timestamp: Date.now() - 1000 * 60 * 60 * 24 * 5, // 5 days ago
+        urlCount: 4,
+        totalIssues: 5,
+        status: 'completed',
+        domainContext: {
+          id: 'ctx_sample_2',
+          description: 'Web3 SaaS Recommendations',
+          entityTypes: 'Exchanges, wallets, protocols, testnets',
+          stalenessRules: 'Defunct projects (FTX, Luna), deprecated networks, old fees',
+          timestamp: Date.now() - 1000 * 60 * 60 * 24 * 5
+        },
+        results: [
+          {
+            url: 'https://example.com/best-crypto-exchanges',
+            title: 'Top Crypto Exchanges for 2022',
+            status: 'success',
+            issueCount: 2,
+            issues: [
+              { id: 'w1', description: 'Dangerous recommendation', flaggedText: 'We highly recommend FTX...', reasoning: 'FTX collapsed in late 2022.' },
+              { id: 'w2', description: 'Stale year', flaggedText: 'Best of 2022', reasoning: 'Content is 3+ years old.' }
+            ]
+          },
+          {
+            url: 'https://example.com/developer-tools',
+            title: 'Web3 Developer Tools Guide',
+            status: 'success',
+            issueCount: 1,
+            issues: [
+              { id: 'w3', description: 'Deprecated network', flaggedText: 'Use Ropsten testnet', reasoning: 'Ropsten is deprecated.' }
+            ]
+          },
+          {
+            url: 'https://example.com/defi-yields',
+            title: 'DeFi Yield Farming Strategies',
+            status: 'success',
+            issueCount: 2,
+            issues: [
+              { id: 'w4', description: 'Stale project', flaggedText: 'Anchor Protocol on Terra', reasoning: 'Project collapsed.' },
+              { id: 'w5', description: 'Outdated APY', flaggedText: '20% stable APY', reasoning: 'Rates are no longer sustainable/available.' }
+            ]
+          },
+          {
+            url: 'https://example.com/wallet-guide',
+            title: 'Solana Wallet Comparison',
+            status: 'success',
+            issueCount: 0,
+            issues: []
+          }
+        ]
+      };
+
+      this.saveRun(mortgageRun);
+      this.saveRun(web3Run);
       
       // Seed context if not exists
       const contexts = this.getDomainContexts();
-      if (!contexts.find(c => c.description === sampleRun.domainContext.description)) {
-         const newContexts = [sampleRun.domainContext, ...contexts].slice(0, 5);
-         localStorage.setItem('updateq_contexts', JSON.stringify(newContexts));
-      }
+      const newContexts = [mortgageRun.domainContext, web3Run.domainContext, ...contexts].slice(0, 5);
+      localStorage.setItem('updateq_contexts', JSON.stringify(newContexts));
     }
   }
 
@@ -338,5 +433,6 @@ class MockService {
 }
 
 export const mockService = new MockService();
+
 
 
