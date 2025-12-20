@@ -6,7 +6,7 @@ import { mockService, AnalysisRun } from '@/lib/mock-service';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Trash2, Eye, Calendar, FileText } from 'lucide-react';
+import { Trash2, Eye, Calendar, FileText, History } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'react-hot-toast';
 
@@ -134,3 +134,4 @@ function HistoryIcon({ className }: { className?: string }) {
     </svg>
   )
 }
+
