@@ -43,20 +43,28 @@ export interface AnalysisRun {
 }
 
 // Mock Data Generators
-const MOCK_TITLES = [
+const MORTGAGE_TITLES = [
   "2023 Mortgage Rates Guide - Best Lenders",
-  "Top 10 High Yield Savings Accounts (Updated 2021)",
   "How to Refinance Your Home Loan",
   "First-Time Home Buyer Programs in California",
   "Current CD Rates: October 2022",
   "VA Loan Requirements and Limits",
   "FHA Loan Guidelines for 2020",
-  "Best Credit Cards for Travel Rewards",
-  "Student Loan Forgiveness Updates",
-  "Auto Insurance Rates by State"
+  "Jumbo Loan Rates and Requirements",
+  "HELOC vs Home Equity Loan",
+  "USDA Loan Map and Income Limits",
+  "Closing Costs Calculator 2021"
 ];
 
-const MOCK_ISSUES = [
+const GENERIC_TITLES = [
+  "Company About Page",
+  "Privacy Policy",
+  "Terms of Service",
+  "Careers at UpdateQ",
+  "Contact Support"
+];
+
+const MORTGAGE_ISSUES = [
   {
     description: "Outdated interest rate reference",
     flaggedText: "Current mortgage rates are hovering around 3.5% for a 30-year fixed loan.",
@@ -262,16 +270,21 @@ class MockService {
       const pageIssues: Issue[] = [];
 
       for (let i = 0; i < numIssues; i++) {
-        const randomIssue = MOCK_ISSUES[Math.floor(Math.random() * MOCK_ISSUES.length)];
+        const randomIssue = MORTGAGE_ISSUES[Math.floor(Math.random() * MORTGAGE_ISSUES.length)];
         pageIssues.push({
           id: generateId(),
           ...randomIssue
         });
       }
 
+      // Select title based on URL if possible, or random mortgage title
+      let title = MORTGAGE_TITLES[index % MORTGAGE_TITLES.length];
+      if (url.includes('about')) title = GENERIC_TITLES[0];
+      if (url.includes('privacy')) title = GENERIC_TITLES[1];
+
       return {
         url,
-        title: MOCK_TITLES[index % MOCK_TITLES.length] || "Untitled Page",
+        title: title || "Untitled Page",
         status: 'success',
         issues: pageIssues,
         issueCount: pageIssues.length
@@ -325,3 +338,4 @@ class MockService {
 }
 
 export const mockService = new MockService();
+
