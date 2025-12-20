@@ -41,16 +41,37 @@ export default function ResultsPage() {
   const handleExportCSV = () => {
     if (!run) return;
 
-    // Generate CSV content
-    const headers = ['URL', 'Title', 'Issue Count', 'Issue 1', 'Issue 2', 'Issue 3', 'Issue 4', 'Issue 5'];
-    const rows = run.results.map(result => {
-      const row = [
-        result.url,
-        result.title,
-        result.issueCount.toString(),
-        ...result.issues.map(i => `[${i.description}] ${i.flaggedText} -> ${i.reasoning}`)
-      ];
-      return row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(',');
+    // Generate CSV content with proper escaping for Google Sheets/Excel
+    const headers = ['URL', 'Page Title', 'Issue Count', 'Issue Description', 'Flagged Text', 'Reasoning'];
+    
+    // Flatten the data structure: one row per issue
+    const rows: string[] = [];
+    
+    run.results.forEach(result => {
+      if (result.issues.length === 0) {
+        // Add a row even if no issues, just to show the page was checked
+        const row = [
+          result.url,
+          result.title,
+          '0',
+          'No issues found',
+          '',
+          ''
+        ];
+        rows.push(row.map(cell => `"${(cell || '').replace(/"/g, '""')}"`).join(','));
+      } else {
+        result.issues.forEach(issue => {
+          const row = [
+            result.url,
+            result.title,
+            result.issueCount.toString(),
+            issue.description,
+            issue.flaggedText,
+            issue.reasoning
+          ];
+          rows.push(row.map(cell => `"${(cell || '').replace(/"/g, '""')}"`).join(','));
+        });
+      }
     });
 
     const csvContent = [headers.join(','), ...rows].join('\n');
@@ -58,10 +79,11 @@ export default function ResultsPage() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `updateq_results_${runId}.csv`);
+    link.setAttribute('download', `updateq_review_${run.domainContext.description.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    toast.success('CSV exported successfully');
   };
 
   if (!run) return null;
@@ -205,5 +227,6 @@ export default function ResultsPage() {
     </div>
   );
 }
+
 
 
