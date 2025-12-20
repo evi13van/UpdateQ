@@ -149,9 +149,9 @@ export default function HomePage() {
             </Badge>
             
             <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-white">
-              Keep Your Content <br />
+              Find what&apos;s outdated. <br />
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 via-teal-300 to-blue-500">
-                Fresh & Accurate
+                Fix what matters.
               </span>
             </h1>
             
@@ -219,5 +219,6 @@ export default function HomePage() {
     </div>
   );
 }
+
 
 
