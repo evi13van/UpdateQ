@@ -156,7 +156,7 @@ export default function HomePage() {
             </h1>
             
             <p className="text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed">
-              UpdateQ automatically identifies stale factual claims across your website, prioritizes updates, and generates ready-to-use briefs for your writers.
+              Content goes out of date. UpdateQ finds where. You tell it what to watch for — that could be rates, statistics, source citations, recommendations, or anything specific to your content — and it scans your pages for information that may no longer be accurate. You get a prioritized list of what needs attention first.
             </p>
             
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
@@ -219,6 +219,7 @@ export default function HomePage() {
     </div>
   );
 }
+
 
 
 
