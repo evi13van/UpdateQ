@@ -4,11 +4,9 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { mockService, AnalysisRun } from '@/lib/mock-service';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, ChevronDown, ChevronUp, Download, Filter, Search, CheckCircle2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { toast } from 'react-hot-toast';
 
 export default function ResultsPage() {
@@ -207,4 +205,5 @@ export default function ResultsPage() {
     </div>
   );
 }
+
 
