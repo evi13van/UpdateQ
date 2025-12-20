@@ -92,15 +92,18 @@ export default function LoginPage() {
             onClick={() => {
               setIsLoading(true);
               setTimeout(() => {
-                mockService.login('demo@updateq.com');
-                toast.success('Logged in as Demo User');
+                mockService.login('maria@contentmanage.com');
+                toast.success('Logged in as Maria');
                 router.push('/');
               }, 800);
             }}
             disabled={isLoading}
           >
-            Use Demo Account
+            Demo as Maria (Content Manager)
           </Button>
+          <p className="text-xs text-center text-slate-500 mt-2">
+            (maria@contentmanage.com / fixmycontent)
+          </p>
         </CardContent>
         <CardFooter className="flex justify-center">
           <p className="text-sm text-slate-400">
@@ -114,5 +117,6 @@ export default function LoginPage() {
     </div>
   );
 }
+
 
 
