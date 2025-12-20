@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowRight, CheckCircle2, Clock, FileText, ShieldCheck, Zap } from 'lucide-react';
+import { ArrowRight, Clock, FileText, ShieldCheck, Zap } from 'lucide-react';
 import { mockService, AnalysisRun } from '@/lib/mock-service';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -198,7 +198,7 @@ export default function HomePage() {
                 </div>
                 <CardTitle>Smart Prioritization</CardTitle>
                 <CardDescription className="text-slate-400">
-                  Don't guess what to update. See exactly which pages have the most issues and start there.
+                  Don&apos;t guess what to update. See exactly which pages have the most issues and start there.
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -219,3 +219,4 @@ export default function HomePage() {
     </div>
   );
 }
+

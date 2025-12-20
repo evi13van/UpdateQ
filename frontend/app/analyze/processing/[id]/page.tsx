@@ -82,7 +82,7 @@ export default function ProcessingPage() {
               <div>
                 <h2 className="text-xl font-bold text-white mb-2">Context Mismatch Detected</h2>
                 <p className="text-slate-300 text-sm">
-                  Some pages appear to be about "Automotive Loans" but your context is configured for "Mortgages".
+                  Some pages appear to be about &quot;Automotive Loans&quot; but your context is configured for &quot;Mortgages&quot;.
                 </p>
               </div>
               <div className="flex gap-3 pt-2">
@@ -117,3 +117,4 @@ export default function ProcessingPage() {
     </div>
   );
 }
+

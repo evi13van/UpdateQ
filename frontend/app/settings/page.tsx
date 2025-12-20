@@ -6,7 +6,6 @@ import { mockService, User } from '@/lib/mock-service';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { toast } from 'react-hot-toast';
 import { LogOut, User as UserIcon, Shield } from 'lucide-react';
 
 export default function SettingsPage() {
@@ -85,3 +84,4 @@ export default function SettingsPage() {
     </div>
   );
 }
+

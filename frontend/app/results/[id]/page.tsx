@@ -2,12 +2,12 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { mockService, AnalysisRun, DetectionResult } from '@/lib/mock-service';
+import { mockService, AnalysisRun } from '@/lib/mock-service';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, ChevronDown, ChevronUp, Download, ExternalLink, Filter, Search } from 'lucide-react';
+import { ArrowLeft, ChevronDown, ChevronUp, Download, Filter, Search, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'react-hot-toast';
 
@@ -181,7 +181,7 @@ export default function ResultsPage() {
                               <div className="space-y-2">
                                 <p className="text-sm font-medium text-amber-400">{issue.description}</p>
                                 <div className="bg-slate-950 p-3 rounded border border-white/5 text-sm text-slate-300 font-mono">
-                                  "{issue.flaggedText}"
+                                  &quot;{issue.flaggedText}&quot;
                                 </div>
                                 <p className="text-sm text-slate-400">
                                   <span className="font-medium text-slate-500">Reasoning:</span> {issue.reasoning}
@@ -207,3 +207,4 @@ export default function ResultsPage() {
     </div>
   );
 }
+

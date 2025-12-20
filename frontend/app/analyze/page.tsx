@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { mockService, DomainContext } from '@/lib/mock-service';
 import { toast } from 'react-hot-toast';
-import { AlertCircle, ArrowRight, History, Save } from 'lucide-react';
+import { ArrowRight, History, Save } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 export default function AnalyzePage() {
@@ -111,7 +111,7 @@ export default function AnalyzePage() {
                 Domain Context
               </CardTitle>
               <CardDescription>
-                Help the AI understand what "stale" means for your content.
+                Help the AI understand what &quot;stale&quot; means for your content.
               </CardDescription>
             </div>
             
@@ -188,3 +188,4 @@ export default function AnalyzePage() {
     </div>
   );
 }
+
