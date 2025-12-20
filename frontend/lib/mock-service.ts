@@ -88,8 +88,92 @@ class MockService {
   // User Auth
   login(email: string): User {
     const user = { id: 'user_123', email, name: email.split('@')[0] };
+    
+    // Special handling for demo user
+    if (email === 'maria@contentmanage.com') {
+      user.id = 'user_maria';
+      user.name = 'Maria';
+      this.seedMariaData(user.id);
+    }
+
     localStorage.setItem('updateq_user', JSON.stringify(user));
     return user;
+  }
+
+  private seedMariaData(userId: string) {
+    if (typeof window === 'undefined') return;
+    
+    const allRuns = this.getAllRuns();
+    const mariaRuns = allRuns.filter(r => r.userId === userId);
+
+    if (mariaRuns.length === 0) {
+      // Create a sample completed run
+      const sampleRun: AnalysisRun = {
+        id: 'run_sample_maria',
+        userId: userId,
+        timestamp: Date.now() - 1000 * 60 * 60 * 24 * 2, // 2 days ago
+        urlCount: 5,
+        totalIssues: 3,
+        status: 'completed',
+        domainContext: {
+          id: 'ctx_sample',
+          description: 'Mortgage Rates and Loan Guides',
+          entityTypes: 'Interest rates, loan limits, deadlines',
+          stalenessRules: 'Rates older than 1 month, 2022 references',
+          timestamp: Date.now() - 1000 * 60 * 60 * 24 * 2
+        },
+        results: [
+          {
+            url: 'https://example.com/mortgage-rates-2023',
+            title: 'Current Mortgage Rates 2023',
+            status: 'success',
+            issueCount: 3,
+            issues: [
+              { id: 'i1', description: 'Outdated year', flaggedText: 'In 2023, rates are...', reasoning: 'Current year is 2024/2025' },
+              { id: 'i2', description: 'Stale rate', flaggedText: '3.5% APR', reasoning: 'Current market rates are ~6-7%' },
+              { id: 'i3', description: 'Old deadline', flaggedText: 'Apply by Dec 2023', reasoning: 'Date has passed' }
+            ]
+          },
+          {
+            url: 'https://example.com/first-time-buyer',
+            title: 'First Time Buyer Guide',
+            status: 'success',
+            issueCount: 0,
+            issues: []
+          },
+           {
+            url: 'https://example.com/refinance',
+            title: 'Refinance Calculator',
+            status: 'success',
+            issueCount: 0,
+            issues: []
+          },
+           {
+            url: 'https://example.com/va-loans',
+            title: 'VA Loan Requirements',
+            status: 'success',
+            issueCount: 0,
+            issues: []
+          },
+           {
+            url: 'https://example.com/fha-loans',
+            title: 'FHA Loan Limits',
+            status: 'success',
+            issueCount: 0,
+            issues: []
+          }
+        ]
+      };
+
+      this.saveRun(sampleRun);
+      
+      // Seed context if not exists
+      const contexts = this.getDomainContexts();
+      if (!contexts.find(c => c.description === sampleRun.domainContext.description)) {
+         const newContexts = [sampleRun.domainContext, ...contexts].slice(0, 5);
+         localStorage.setItem('updateq_contexts', JSON.stringify(newContexts));
+      }
+    }
   }
 
   register(email: string): User {
@@ -240,3 +324,4 @@ class MockService {
 }
 
 export const mockService = new MockService();
+
