@@ -154,10 +154,9 @@ class MockService {
     if (typeof window === 'undefined') return;
     
     const allRuns = this.getAllRuns();
-    const mariaRuns = allRuns.filter(r => r.userId === userId);
-
-    if (mariaRuns.length === 0) {
-      // Create a sample completed run (Mortgage)
+    
+    // 1. Ensure Mortgage Run exists
+    if (!allRuns.find(r => r.id === 'run_sample_maria_1')) {
       const mortgageRun: AnalysisRun = {
         id: 'run_sample_maria_1',
         userId: userId,
@@ -214,8 +213,11 @@ class MockService {
           }
         ]
       };
+      this.saveRun(mortgageRun);
+    }
 
-      // Create a sample completed run (Web3)
+    // 2. Ensure Web3 Run exists
+    if (!allRuns.find(r => r.id === 'run_sample_maria_2')) {
       const web3Run: AnalysisRun = {
         id: 'run_sample_maria_2',
         userId: userId,
@@ -269,14 +271,32 @@ class MockService {
           }
         ]
       };
-
-      this.saveRun(mortgageRun);
       this.saveRun(web3Run);
+    }
       
-      // Seed context if not exists
-      const contexts = this.getDomainContexts();
-      const newContexts = [mortgageRun.domainContext, web3Run.domainContext, ...contexts].slice(0, 5);
-      localStorage.setItem('updateq_contexts', JSON.stringify(newContexts));
+    // Seed contexts if not exists
+    const contexts = this.getDomainContexts();
+    const mortgageCtx = {
+      id: 'ctx_sample_1',
+      description: 'Mortgage Rates and Loan Guides',
+      entityTypes: 'Interest rates, loan limits, deadlines',
+      stalenessRules: 'Rates older than 1 month, 2022 references',
+      timestamp: Date.now() - 1000 * 60 * 60 * 24 * 2
+    };
+    const web3Ctx = {
+      id: 'ctx_sample_2',
+      description: 'Web3 SaaS Recommendations',
+      entityTypes: 'Exchanges, wallets, protocols, testnets',
+      stalenessRules: 'Defunct projects (FTX, Luna), deprecated networks, old fees',
+      timestamp: Date.now() - 1000 * 60 * 60 * 24 * 5
+    };
+
+    let newContexts = [...contexts];
+    if (!contexts.find(c => c.id === 'ctx_sample_1')) newContexts.push(mortgageCtx);
+    if (!contexts.find(c => c.id === 'ctx_sample_2')) newContexts.push(web3Ctx);
+    
+    if (newContexts.length > contexts.length) {
+       localStorage.setItem('updateq_contexts', JSON.stringify(newContexts.slice(0, 5)));
     }
   }
 
@@ -433,6 +453,7 @@ class MockService {
 }
 
 export const mockService = new MockService();
+
 
 
 
