@@ -1,0 +1,242 @@
+import { v4 as uuidv4 } from 'uuid';
+
+// Types
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+}
+
+export interface DomainContext {
+  id: string;
+  description: string;
+  entityTypes: string;
+  stalenessRules: string;
+  timestamp: number;
+}
+
+export interface Issue {
+  id: string;
+  description: string;
+  flaggedText: string;
+  reasoning: string;
+}
+
+export interface DetectionResult {
+  url: string;
+  title: string;
+  status: 'success' | 'failed';
+  issues: Issue[];
+  issueCount: number;
+}
+
+export interface AnalysisRun {
+  id: string;
+  userId: string;
+  timestamp: number;
+  urlCount: number;
+  totalIssues: number;
+  status: 'processing' | 'completed' | 'failed';
+  domainContext: DomainContext;
+  results: DetectionResult[];
+}
+
+// Mock Data Generators
+const MOCK_TITLES = [
+  "2023 Mortgage Rates Guide - Best Lenders",
+  "Top 10 High Yield Savings Accounts (Updated 2021)",
+  "How to Refinance Your Home Loan",
+  "First-Time Home Buyer Programs in California",
+  "Current CD Rates: October 2022",
+  "VA Loan Requirements and Limits",
+  "FHA Loan Guidelines for 2020",
+  "Best Credit Cards for Travel Rewards",
+  "Student Loan Forgiveness Updates",
+  "Auto Insurance Rates by State"
+];
+
+const MOCK_ISSUES = [
+  {
+    description: "Outdated interest rate reference",
+    flaggedText: "Current mortgage rates are hovering around 3.5% for a 30-year fixed loan.",
+    reasoning: "Market data indicates current rates are significantly higher (approx. 6-7%) as of late 2023/2024."
+  },
+  {
+    description: "Stale year reference",
+    flaggedText: "As we move into 2022, buyers should prepare for...",
+    reasoning: "Content refers to 2022 as the future/current year, indicating the page hasn't been updated in 2+ years."
+  },
+  {
+    description: "Expired program deadline",
+    flaggedText: "Applications for this grant must be submitted by December 31, 2021.",
+    reasoning: "The deadline mentioned has passed, making this actionable advice invalid for current users."
+  },
+  {
+    description: "Old regulatory limit",
+    flaggedText: "The conforming loan limit for 2021 is $548,250.",
+    reasoning: "Conforming loan limits have increased annually. The 2024 limit is $766,550."
+  },
+  {
+    description: "Broken or deprecated product link",
+    flaggedText: "Check out the Wells Fargo Propel American Express card.",
+    reasoning: "This specific product has been discontinued and is no longer available for new applicants."
+  }
+];
+
+// Service Class
+class MockService {
+  // User Auth
+  login(email: string): User {
+    const user = { id: 'user_123', email, name: email.split('@')[0] };
+    localStorage.setItem('updateq_user', JSON.stringify(user));
+    return user;
+  }
+
+  register(email: string): User {
+    return this.login(email);
+  }
+
+  getCurrentUser(): User | null {
+    if (typeof window === 'undefined') return null;
+    const userStr = localStorage.getItem('updateq_user');
+    return userStr ? JSON.parse(userStr) : null;
+  }
+
+  logout() {
+    localStorage.removeItem('updateq_user');
+  }
+
+  // Domain Context History
+  saveDomainContext(context: Omit<DomainContext, 'id' | 'timestamp'>) {
+    const contexts = this.getDomainContexts();
+    const newContext = {
+      ...context,
+      id: uuidv4(),
+      timestamp: Date.now()
+    };
+    
+    // Keep last 5
+    const updated = [newContext, ...contexts].slice(0, 5);
+    localStorage.setItem('updateq_contexts', JSON.stringify(updated));
+    return newContext;
+  }
+
+  getDomainContexts(): DomainContext[] {
+    if (typeof window === 'undefined') return [];
+    const str = localStorage.getItem('updateq_contexts');
+    return str ? JSON.parse(str) : [];
+  }
+
+  // Analysis Runs
+  async startAnalysis(urls: string[], context: DomainContext): Promise<string> {
+    const user = this.getCurrentUser();
+    if (!user) throw new Error("User not authenticated");
+
+    const runId = uuidv4();
+    
+    // Create initial run entry
+    const newRun: AnalysisRun = {
+      id: runId,
+      userId: user.id,
+      timestamp: Date.now(),
+      urlCount: urls.length,
+      totalIssues: 0,
+      status: 'processing',
+      domainContext: context,
+      results: []
+    };
+
+    this.saveRun(newRun);
+
+    // Simulate async processing
+    this.simulateProcessing(runId, urls);
+
+    return runId;
+  }
+
+  private async simulateProcessing(runId: string, urls: string[]) {
+    // Wait a bit to simulate network/processing
+    await new Promise(resolve => setTimeout(resolve, 3000));
+
+    const results: DetectionResult[] = urls.map((url, index) => {
+      // Randomly decide if page has issues
+      const hasIssues = Math.random() > 0.3;
+      const isFailed = Math.random() > 0.95; // 5% failure rate
+
+      if (isFailed) {
+        return {
+          url,
+          title: "Error: Unable to access page",
+          status: 'failed',
+          issues: [],
+          issueCount: 0
+        };
+      }
+
+      const numIssues = hasIssues ? Math.floor(Math.random() * 4) + 1 : 0;
+      const pageIssues: Issue[] = [];
+
+      for (let i = 0; i < numIssues; i++) {
+        const randomIssue = MOCK_ISSUES[Math.floor(Math.random() * MOCK_ISSUES.length)];
+        pageIssues.push({
+          id: uuidv4(),
+          ...randomIssue
+        });
+      }
+
+      return {
+        url,
+        title: MOCK_TITLES[index % MOCK_TITLES.length] || "Untitled Page",
+        status: 'success',
+        issues: pageIssues,
+        issueCount: pageIssues.length
+      };
+    });
+
+    const totalIssues = results.reduce((acc, curr) => acc + curr.issueCount, 0);
+
+    const run = this.getRun(runId);
+    if (run) {
+      const completedRun: AnalysisRun = {
+        ...run,
+        status: 'completed',
+        results,
+        totalIssues
+      };
+      this.saveRun(completedRun);
+    }
+  }
+
+  getRun(id: string): AnalysisRun | null {
+    const runs = this.getAllRuns();
+    return runs.find(r => r.id === id) || null;
+  }
+
+  getAllRuns(): AnalysisRun[] {
+    if (typeof window === 'undefined') return [];
+    const str = localStorage.getItem('updateq_runs');
+    return str ? JSON.parse(str) : [];
+  }
+
+  saveRun(run: AnalysisRun) {
+    const runs = this.getAllRuns();
+    const index = runs.findIndex(r => r.id === run.id);
+    
+    let updatedRuns;
+    if (index >= 0) {
+      updatedRuns = [...runs];
+      updatedRuns[index] = run;
+    } else {
+      updatedRuns = [run, ...runs];
+    }
+    
+    localStorage.setItem('updateq_runs', JSON.stringify(updatedRuns));
+  }
+
+  deleteRun(id: string) {
+    const runs = this.getAllRuns().filter(r => r.id !== id);
+    localStorage.setItem('updateq_runs', JSON.stringify(runs));
+  }
+}
+
+export const mockService = new MockService();
