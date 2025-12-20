@@ -28,7 +28,7 @@ const Navbar = () => {
 
   const navItems = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-    { name: 'New Analysis', href: '/analyze', icon: PlusCircle },
+    { name: 'New Review', href: '/analyze', icon: PlusCircle },
     { name: 'History', href: '/history', icon: History },
     { name: 'Settings', href: '/settings', icon: Settings },
   ];
@@ -142,3 +142,4 @@ const Navbar = () => {
 };
 
 export default Navbar;
+

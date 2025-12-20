@@ -52,7 +52,7 @@ export default function HistoryPage() {
               Your past analysis runs will appear here. Start your first scan to get started.
             </p>
             <Link href="/analyze">
-              <Button>Start New Analysis</Button>
+              <Button>New Review</Button>
             </Link>
           </CardContent>
         </Card>
@@ -112,6 +112,7 @@ export default function HistoryPage() {
     </div>
   );
 }
+
 
 
 

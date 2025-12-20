@@ -34,7 +34,7 @@ export default function HomePage() {
           <Link href="/analyze">
             <Button size="lg" className="shadow-lg shadow-emerald-500/20">
               <Zap className="mr-2 h-4 w-4" />
-              Start New Analysis
+              New Review
             </Button>
           </Link>
         </div>
@@ -122,7 +122,7 @@ export default function HomePage() {
                   Start your first content freshness analysis to see results here.
                 </p>
                 <Link href="/analyze">
-                  <Button>Start Analysis</Button>
+                  <Button>New Review</Button>
                 </Link>
               </CardContent>
             </Card>
@@ -219,6 +219,7 @@ export default function HomePage() {
     </div>
   );
 }
+
 
 
 
