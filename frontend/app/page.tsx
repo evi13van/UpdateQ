@@ -145,7 +145,7 @@ export default function HomePage() {
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-4xl mx-auto text-center space-y-8">
             <Badge variant="outline" className="px-4 py-1.5 text-sm border-emerald-500/30 text-emerald-400 bg-emerald-500/10 backdrop-blur-md">
-              New: AI-Powered Content Audits
+              NEW: AI-powered content reviews
             </Badge>
             
             <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-white">
@@ -219,4 +219,5 @@ export default function HomePage() {
     </div>
   );
 }
+
 
