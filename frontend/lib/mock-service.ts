@@ -178,9 +178,9 @@ class MockService {
             status: 'success',
             issueCount: 3,
             issues: [
-              { id: 'i1', description: 'Outdated year', flaggedText: 'In 2023, rates are...', reasoning: 'Current year is 2024/2025' },
-              { id: 'i2', description: 'Stale rate', flaggedText: '3.5% APR', reasoning: 'Current market rates are ~6-7%' },
-              { id: 'i3', description: 'Old deadline', flaggedText: 'Apply by Dec 2023', reasoning: 'Date has passed' }
+              { id: 'i1', description: 'Outdated year', flaggedText: 'In 2023, rates are...', reasoning: 'Current year is 2024/2025', status: 'open' },
+              { id: 'i2', description: 'Stale rate', flaggedText: '3.5% APR', reasoning: 'Current market rates are ~6-7%', status: 'open' },
+              { id: 'i3', description: 'Old deadline', flaggedText: 'Apply by Dec 2023', reasoning: 'Date has passed', status: 'open' }
             ]
           },
           {
@@ -239,8 +239,8 @@ class MockService {
             status: 'success',
             issueCount: 2,
             issues: [
-              { id: 'w1', description: 'Dangerous recommendation', flaggedText: 'We highly recommend FTX...', reasoning: 'FTX collapsed in late 2022.' },
-              { id: 'w2', description: 'Stale year', flaggedText: 'Best of 2022', reasoning: 'Content is 3+ years old.' }
+              { id: 'w1', description: 'Dangerous recommendation', flaggedText: 'We highly recommend FTX...', reasoning: 'FTX collapsed in late 2022.', status: 'open' },
+              { id: 'w2', description: 'Stale year', flaggedText: 'Best of 2022', reasoning: 'Content is 3+ years old.', status: 'open' }
             ]
           },
           {
@@ -249,7 +249,7 @@ class MockService {
             status: 'success',
             issueCount: 1,
             issues: [
-              { id: 'w3', description: 'Deprecated network', flaggedText: 'Use Ropsten testnet', reasoning: 'Ropsten is deprecated.' }
+              { id: 'w3', description: 'Deprecated network', flaggedText: 'Use Ropsten testnet', reasoning: 'Ropsten is deprecated.', status: 'open' }
             ]
           },
           {
@@ -258,8 +258,8 @@ class MockService {
             status: 'success',
             issueCount: 2,
             issues: [
-              { id: 'w4', description: 'Stale project', flaggedText: 'Anchor Protocol on Terra', reasoning: 'Project collapsed.' },
-              { id: 'w5', description: 'Outdated APY', flaggedText: '20% stable APY', reasoning: 'Rates are no longer sustainable/available.' }
+              { id: 'w4', description: 'Stale project', flaggedText: 'Anchor Protocol on Terra', reasoning: 'Project collapsed.', status: 'open' },
+              { id: 'w5', description: 'Outdated APY', flaggedText: '20% stable APY', reasoning: 'Rates are no longer sustainable/available.', status: 'open' }
             ]
           },
           {
@@ -388,7 +388,8 @@ class MockService {
         const randomIssue = NURSE_ISSUES[Math.floor(Math.random() * NURSE_ISSUES.length)];
         pageIssues.push({
           id: generateId(),
-          ...randomIssue
+          ...randomIssue,
+          status: 'open'
         });
       }
 
@@ -453,6 +454,7 @@ class MockService {
 }
 
 export const mockService = new MockService();
+
 
 
 

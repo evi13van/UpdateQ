@@ -31,7 +31,7 @@ export default function AssignmentsPage() {
     const allIssues = mockService.getAllIssues();
     // Filter to show only assigned or completed issues (exclude 'open' ones from this view usually, or show all)
     // For this view, let's show assigned and completed primarily, as "Assignments" implies handoff has happened.
-    const trackedIssues = allIssues.filter(i => i.issue.status !== 'open');
+    const trackedIssues = allIssues.filter(i => i.issue.status && i.issue.status !== 'open');
     setIssues(trackedIssues);
   };
 
@@ -207,3 +207,4 @@ function ClipboardListIcon({ className }: { className?: string }) {
     </svg>
   )
 }
+
