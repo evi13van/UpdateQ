@@ -42,7 +42,19 @@ export interface AnalysisRun {
   results: DetectionResult[];
 }
 
+export interface Writer {
+  id: string;
+  name: string;
+  email: string;
+}
+
 // Mock Data Generators
+const MOCK_WRITERS: Writer[] = [
+  { id: 'w1', name: 'Sarah Jenkins', email: 'sarah.j@example.com' },
+  { id: 'w2', name: 'Mike Chen', email: 'mike.c@example.com' },
+  { id: 'w3', name: 'Jessica Alverez', email: 'jessica.a@example.com' }
+];
+
 const NURSE_TITLES = [
   "2025 Travel Nurse Salary Guide",
   "Highest Paying States for Travel Nurses",
@@ -335,6 +347,25 @@ class MockService {
     return str ? JSON.parse(str) : [];
   }
 
+  // Writers
+  getWriters(): Writer[] {
+    if (typeof window === 'undefined') return MOCK_WRITERS;
+    const stored = localStorage.getItem('updateq_writers');
+    if (!stored) {
+      localStorage.setItem('updateq_writers', JSON.stringify(MOCK_WRITERS));
+      return MOCK_WRITERS;
+    }
+    return JSON.parse(stored);
+  }
+
+  addWriter(name: string, email: string): Writer {
+    const writers = this.getWriters();
+    const newWriter = { id: generateId(), name, email };
+    const updated = [...writers, newWriter];
+    localStorage.setItem('updateq_writers', JSON.stringify(updated));
+    return newWriter;
+  }
+
   // Analysis Runs
   async startAnalysis(urls: string[], context: DomainContext): Promise<string> {
     const user = this.getCurrentUser();
@@ -501,6 +532,7 @@ class MockService {
 }
 
 export const mockService = new MockService();
+
 
 
 

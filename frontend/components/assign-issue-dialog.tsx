@@ -1,11 +1,11 @@
-"use client";
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { UserPlus } from 'lucide-react';
+import { mockService, Writer } from '@/lib/mock-service';
+import { toast } from 'react-hot-toast';
 
 interface AssignIssueDialogProps {
   onAssign: (data: { writerName: string; googleDocUrl: string; dueDate: string }) => void;
@@ -21,7 +21,8 @@ interface AssignIssueDialogProps {
 
 export function AssignIssueDialog({ onAssign, trigger, defaultValues, title = "Assign to Writer", confirmLabel = "Assign Issue" }: AssignIssueDialogProps) {
   const [open, setOpen] = useState(false);
-  const [writerName, setWriterName] = useState(defaultValues?.writerName || '');
+  const [writers, setWriters] = useState<Writer[]>([]);
+  const [selectedWriterId, setSelectedWriterId] = useState('');
   const [googleDocUrl, setGoogleDocUrl] = useState(defaultValues?.googleDocUrl || '');
   
   // Convert timestamp to YYYY-MM-DD for date input
@@ -32,13 +33,50 @@ export function AssignIssueDialog({ onAssign, trigger, defaultValues, title = "A
 
   const [dueDate, setDueDate] = useState(formatDateForInput(defaultValues?.dueDate));
 
+  useEffect(() => {
+    if (open) {
+      const loadedWriters = mockService.getWriters();
+      setWriters(loadedWriters);
+      
+      // If editing, try to find the writer ID by name (since we stored name previously)
+      // In a real app, we'd store ID. For now, we match by name or default to empty.
+      if (defaultValues?.writerName) {
+        const writer = loadedWriters.find(w => w.name === defaultValues.writerName);
+        if (writer) setSelectedWriterId(writer.id);
+      }
+    }
+  }, [open, defaultValues]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onAssign({ writerName, googleDocUrl, dueDate });
+    
+    const writer = writers.find(w => w.id === selectedWriterId);
+    if (!writer) {
+      toast.error('Please select a writer');
+      return;
+    }
+
+    // Simulate sending email
+    console.log(`
+      To: ${writer.email}
+      Subject: Assignment: Content Update Required
+      
+      Salutation ${writer.name},
+
+      I am assigning this update to you. This is due ${dueDate}.
+
+      The link to Google doc with issues list: ${googleDocUrl}
+
+      Thanks,
+      Maria
+    `);
+    toast.success(`Email sent to ${writer.email}`);
+
+    onAssign({ writerName: writer.name, googleDocUrl, dueDate });
     setOpen(false);
+    
     if (!defaultValues) {
-      // Only reset if it's a new assignment, otherwise keep values or let parent handle it
-      setWriterName('');
+      setSelectedWriterId('');
       setGoogleDocUrl('');
       setDueDate('');
     }
@@ -63,15 +101,21 @@ export function AssignIssueDialog({ onAssign, trigger, defaultValues, title = "A
         </DialogHeader>
         <form onSubmit={handleSubmit} className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="writer" className="text-slate-200">Writer Name</Label>
-            <Input
+            <Label htmlFor="writer" className="text-slate-200">Assign To</Label>
+            <select
               id="writer"
-              value={writerName}
-              onChange={(e) => setWriterName(e.target.value)}
-              placeholder="e.g. Sarah Writer"
-              className="col-span-3"
+              value={selectedWriterId}
+              onChange={(e) => setSelectedWriterId(e.target.value)}
+              className="flex h-10 w-full rounded-md border border-white/10 bg-slate-950/50 px-3 py-2 text-sm text-slate-100 ring-offset-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 backdrop-blur-sm transition-all"
               required
-            />
+            >
+              <option value="" disabled>Select a writer...</option>
+              {writers.map((writer) => (
+                <option key={writer.id} value={writer.id}>
+                  {writer.name} ({writer.email})
+                </option>
+              ))}
+            </select>
           </div>
           <div className="grid gap-2">
             <Label htmlFor="doc" className="text-slate-200">Google Doc URL</Label>
@@ -81,6 +125,7 @@ export function AssignIssueDialog({ onAssign, trigger, defaultValues, title = "A
               onChange={(e) => setGoogleDocUrl(e.target.value)}
               placeholder="https://docs.google.com/..."
               className="col-span-3"
+              required
             />
           </div>
           <div className="grid gap-2">
@@ -102,4 +147,5 @@ export function AssignIssueDialog({ onAssign, trigger, defaultValues, title = "A
     </Dialog>
   );
 }
+
 
