@@ -10,22 +10,38 @@ import { UserPlus } from 'lucide-react';
 interface AssignIssueDialogProps {
   onAssign: (data: { writerName: string; googleDocUrl: string; dueDate: string }) => void;
   trigger?: React.ReactNode;
+  defaultValues?: {
+    writerName?: string;
+    googleDocUrl?: string;
+    dueDate?: number;
+  };
+  title?: string;
+  confirmLabel?: string;
 }
 
-export function AssignIssueDialog({ onAssign, trigger }: AssignIssueDialogProps) {
+export function AssignIssueDialog({ onAssign, trigger, defaultValues, title = "Assign to Writer", confirmLabel = "Assign Issue" }: AssignIssueDialogProps) {
   const [open, setOpen] = useState(false);
-  const [writerName, setWriterName] = useState('');
-  const [googleDocUrl, setGoogleDocUrl] = useState('');
-  const [dueDate, setDueDate] = useState('');
+  const [writerName, setWriterName] = useState(defaultValues?.writerName || '');
+  const [googleDocUrl, setGoogleDocUrl] = useState(defaultValues?.googleDocUrl || '');
+  
+  // Convert timestamp to YYYY-MM-DD for date input
+  const formatDateForInput = (timestamp?: number) => {
+    if (!timestamp) return '';
+    return new Date(timestamp).toISOString().split('T')[0];
+  };
+
+  const [dueDate, setDueDate] = useState(formatDateForInput(defaultValues?.dueDate));
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onAssign({ writerName, googleDocUrl, dueDate });
     setOpen(false);
-    // Reset form
-    setWriterName('');
-    setGoogleDocUrl('');
-    setDueDate('');
+    if (!defaultValues) {
+      // Only reset if it's a new assignment, otherwise keep values or let parent handle it
+      setWriterName('');
+      setGoogleDocUrl('');
+      setDueDate('');
+    }
   };
 
   return (
@@ -40,9 +56,9 @@ export function AssignIssueDialog({ onAssign, trigger }: AssignIssueDialogProps)
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px] bg-slate-900 border-white/10 text-white">
         <DialogHeader>
-          <DialogTitle>Assign to Writer</DialogTitle>
+          <DialogTitle>{title}</DialogTitle>
           <DialogDescription className="text-slate-400">
-            Enter assignment details to hand off this issue.
+            {defaultValues ? 'Update assignment details.' : 'Enter assignment details to hand off this issue.'}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="grid gap-4 py-4">
@@ -79,10 +95,11 @@ export function AssignIssueDialog({ onAssign, trigger }: AssignIssueDialogProps)
             />
           </div>
           <DialogFooter>
-            <Button type="submit" className="bg-emerald-500 hover:bg-emerald-600 text-white">Assign Issue</Button>
+            <Button type="submit" className="bg-emerald-500 hover:bg-emerald-600 text-white">{confirmLabel}</Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
   );
 }
+
