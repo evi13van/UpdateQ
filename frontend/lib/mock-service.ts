@@ -447,13 +447,61 @@ class MockService {
     localStorage.setItem('updateq_runs', JSON.stringify(updatedRuns));
   }
 
-  deleteRun(id: string) {
-    const runs = this.getAllRuns().filter(r => r.id !== id);
+  updateIssue(runId: string, url: string, issueId: string, updates: Partial<Issue>) {
+    const runs = this.getAllRuns();
+    const runIndex = runs.findIndex(r => r.id === runId);
+    if (runIndex === -1) return;
+
+    const run = runs[runIndex];
+    const resultIndex = run.results.findIndex(r => r.url === url);
+    if (resultIndex === -1) return;
+
+    const result = run.results[resultIndex];
+    const issueIndex = result.issues.findIndex(i => i.id === issueId);
+    if (issueIndex === -1) return;
+
+    const issue = result.issues[issueIndex];
+    const updatedIssue = { ...issue, ...updates };
+    
+    // Update timestamps based on status changes
+    if (updates.status === 'assigned' && issue.status !== 'assigned') {
+      updatedIssue.assignedAt = Date.now();
+    }
+    if (updates.status === 'completed' && issue.status !== 'completed') {
+      updatedIssue.completedAt = Date.now();
+    }
+
+    result.issues[issueIndex] = updatedIssue;
+    run.results[resultIndex] = result;
+    runs[runIndex] = run;
+
     localStorage.setItem('updateq_runs', JSON.stringify(runs));
+    return updatedIssue;
+  }
+
+  getAllIssues() {
+    const runs = this.getAllRuns();
+    const allIssues: { runId: string; url: string; pageTitle: string; issue: Issue }[] = [];
+    
+    runs.forEach(run => {
+      run.results.forEach(result => {
+        result.issues.forEach(issue => {
+          allIssues.push({
+            runId: run.id,
+            url: result.url,
+            pageTitle: result.title,
+            issue
+          });
+        });
+      });
+    });
+    
+    return allIssues;
   }
 }
 
 export const mockService = new MockService();
+
 
 
 
