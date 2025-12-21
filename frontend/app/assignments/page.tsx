@@ -12,6 +12,7 @@ import { toast } from 'react-hot-toast';
 import Link from 'next/link';
 import { AssignIssueDialog } from '@/components/assign-issue-dialog';
 import { AddWriterDialog } from '@/components/add-writer-dialog';
+import { AssignNewTaskDialog } from '@/components/assign-new-task-dialog';
 
 interface ExtendedIssue {
   runId: string;
@@ -70,6 +71,7 @@ export default function AssignmentsPage() {
           <p className="text-slate-400">Track progress of content updates handed off to your team.</p>
         </div>
         <div className="flex gap-2">
+          <AssignNewTaskDialog />
           <AddWriterDialog />
           <Button 
             variant={filterStatus === 'in_progress' ? 'default' : 'outline'}
@@ -235,6 +237,7 @@ function ClipboardListIcon({ className }: { className?: string }) {
     </svg>
   )
 }
+
 
 
 
