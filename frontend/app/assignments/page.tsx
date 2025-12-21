@@ -71,7 +71,7 @@ export default function AssignmentsPage() {
           <p className="text-slate-400">Track progress of content updates handed off to your team.</p>
         </div>
         <div className="flex gap-2">
-          <AssignNewTaskDialog />
+          <AssignNewTaskDialog onAssign={loadIssues} />
           <AddWriterDialog />
           <Button 
             variant={filterStatus === 'in_progress' ? 'default' : 'outline'}
@@ -237,6 +237,7 @@ function ClipboardListIcon({ className }: { className?: string }) {
     </svg>
   )
 }
+
 
 
 

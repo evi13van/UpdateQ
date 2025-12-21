@@ -53,10 +53,14 @@ export function AssignNewTaskDialog({ onAssign, trigger }: AssignNewTaskDialogPr
       Maria
     `);
     
-    // In a real app, we would create a new task/issue here.
-    // For this mock, we'll just show success since we don't have a "create ad-hoc task" method in mockService yet
-    // or we could potentially create a dummy run/issue.
-    // Let's just simulate success for the UI requirement.
+    // Create the task in the mock service
+    mockService.createManualTask({
+      title: taskTitle,
+      writerId: writer.id,
+      writerName: writer.name,
+      googleDocUrl: googleDocUrl,
+      dueDate: new Date(dueDate).getTime()
+    });
     
     toast.success(`Task assigned to ${writer.name}`);
     setOpen(false);
@@ -143,3 +147,4 @@ export function AssignNewTaskDialog({ onAssign, trigger }: AssignNewTaskDialogPr
     </Dialog>
   );
 }
+

@@ -529,9 +529,68 @@ class MockService {
     
     return allIssues;
   }
+
+  createManualTask(data: { title: string, writerId: string, writerName: string, googleDocUrl: string, dueDate: number }) {
+    const runs = this.getAllRuns();
+    let manualRun = runs.find(r => r.id === 'manual_assignments_run');
+    
+    if (!manualRun) {
+      manualRun = {
+        id: 'manual_assignments_run',
+        userId: this.getCurrentUser()?.id || 'unknown',
+        timestamp: Date.now(),
+        urlCount: 0,
+        totalIssues: 0,
+        status: 'completed',
+        domainContext: {
+          id: 'ctx_manual',
+          description: 'Manual Assignments',
+          entityTypes: 'Manual',
+          stalenessRules: 'Manual',
+          timestamp: Date.now()
+        },
+        results: []
+      };
+      runs.unshift(manualRun);
+    }
+
+    const newIssue: Issue = {
+      id: generateId(),
+      description: 'Manual Task Assignment',
+      flaggedText: data.title,
+      reasoning: 'Manually assigned task',
+      status: 'in_progress',
+      assignedTo: data.writerName,
+      assignedAt: Date.now(),
+      googleDocUrl: data.googleDocUrl,
+      dueDate: data.dueDate
+    };
+
+    const newResult: DetectionResult = {
+      url: data.googleDocUrl || '#',
+      title: data.title,
+      status: 'success',
+      issues: [newIssue],
+      issueCount: 1
+    };
+
+    manualRun.results.unshift(newResult);
+    manualRun.urlCount += 1;
+    manualRun.totalIssues += 1;
+    
+    // Update the run in the array if it was found, otherwise it was already unshifted
+    const index = runs.findIndex(r => r.id === 'manual_assignments_run');
+    if (index !== -1) {
+        runs[index] = manualRun;
+    }
+
+    localStorage.setItem('updateq_runs', JSON.stringify(runs));
+    return newIssue;
+  }
 }
 
 export const mockService = new MockService();
+
 
 
 
