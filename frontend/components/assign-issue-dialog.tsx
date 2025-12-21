@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { UserPlus } from 'lucide-react';
-import { mockService, Writer } from '@/lib/mock-service';
+import { apiService, Writer } from '@/lib/api';
 import { toast } from 'react-hot-toast';
 
 interface AssignIssueDialogProps {
@@ -34,17 +34,24 @@ export function AssignIssueDialog({ onAssign, trigger, defaultValues, title = "A
   const [dueDate, setDueDate] = useState(formatDateForInput(defaultValues?.dueDate));
 
   useEffect(() => {
-    if (open) {
-      const loadedWriters = mockService.getWriters();
-      setWriters(loadedWriters);
-      
-      // If editing, try to find the writer ID by name (since we stored name previously)
-      // In a real app, we'd store ID. For now, we match by name or default to empty.
-      if (defaultValues?.writerName) {
-        const writer = loadedWriters.find(w => w.name === defaultValues.writerName);
-        if (writer) setSelectedWriterId(writer.id);
+    const loadWriters = async () => {
+      if (open) {
+        try {
+          const loadedWriters = await apiService.getWriters();
+          setWriters(loadedWriters);
+          
+          // If editing, try to find the writer ID by name
+          if (defaultValues?.writerName) {
+            const writer = loadedWriters.find(w => w.name === defaultValues.writerName);
+            if (writer) setSelectedWriterId(writer.id);
+          }
+        } catch (error) {
+          toast.error('Failed to load writers');
+          console.error(error);
+        }
       }
-    }
+    };
+    loadWriters();
   }, [open, defaultValues]);
 
   const handleSubmit = (e: React.FormEvent) => {

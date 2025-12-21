@@ -38,11 +38,13 @@ async def process_analysis(run_id: str, urls: list, domain_context: dict):
             continue
         
         # Detect stale content
+        print(f"[DEBUG] Starting detection for {url}")
         detection = await detect_stale_content(
             url,
             extraction["content"],
             domain_context
         )
+        print(f"[DEBUG] Detection complete for {url}: {detection.get('issue_count', 0)} issues found")
         
         issue_count = detection.get("issue_count", 0)
         total_issues += issue_count

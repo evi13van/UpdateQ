@@ -13,10 +13,10 @@ const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  // Simple check for auth state
+  // Check for auth state using token
   useEffect(() => {
-    const user = localStorage.getItem('updateq_user');
-    setIsLoggedIn(!!user);
+    const token = localStorage.getItem('updateq_token');
+    setIsLoggedIn(!!token);
   }, [pathname]);
 
   const handleLogout = () => {

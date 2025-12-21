@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowRight, Clock, FileText, ShieldCheck, Zap } from 'lucide-react';
-import { mockService, AnalysisRun } from '@/lib/mock-service';
+import { apiService, AnalysisRun } from '@/lib/api';
 import { formatDistanceToNow } from 'date-fns';
 
 export default function HomePage() {
@@ -14,12 +14,19 @@ export default function HomePage() {
   const [recentRuns, setRecentRuns] = useState<AnalysisRun[]>([]);
 
   useEffect(() => {
-    const user = mockService.getCurrentUser();
-    if (user) {
-      setIsLoggedIn(true);
-      const runs = mockService.getAllRuns();
-      setRecentRuns(runs.slice(0, 3)); // Get top 3
-    }
+    const loadData = async () => {
+      const user = await apiService.getCurrentUser();
+      if (user) {
+        setIsLoggedIn(true);
+        try {
+          const runs = await apiService.getAllAnalysisRuns();
+          setRecentRuns(runs.slice(0, 3)); // Get top 3
+        } catch (error) {
+          console.error('Error loading runs:', error);
+        }
+      }
+    };
+    loadData();
   }, []);
 
   if (isLoggedIn) {

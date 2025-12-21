@@ -37,11 +37,9 @@ export default function AnalyzePage() {
       return;
     }
 
-    // Load saved contexts from localStorage
-    const savedContextsStr = localStorage.getItem('domain_contexts');
-    if (savedContextsStr) {
-      setSavedContexts(JSON.parse(savedContextsStr));
-    }
+    // Load saved contexts from localStorage via apiService
+    const contexts = apiService.getDomainContexts();
+    setSavedContexts(contexts);
   }, [router]);
 
   const handleLoadContext = (context: DomainContext) => {
@@ -83,17 +81,12 @@ export default function AnalyzePage() {
     setIsSubmitting(true);
 
     try {
-      // Save context to localStorage
-      const context: DomainContext = {
-        id: Date.now().toString(),
+      // Save context using apiService (localStorage only per PRD)
+      apiService.saveDomainContext({
         description,
         entityTypes,
         stalenessRules
-      };
-      
-      const existingContexts = savedContexts.filter(c => c.description !== description);
-      const updatedContexts = [context, ...existingContexts].slice(0, 5); // Keep last 5
-      localStorage.setItem('domain_contexts', JSON.stringify(updatedContexts));
+      });
 
       // Start analysis via API
       const response = await apiService.startAnalysis(urlList, {

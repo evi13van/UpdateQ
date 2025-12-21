@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { UserPlus } from 'lucide-react';
-import { mockService, Writer } from '@/lib/mock-service';
+import { apiService, Writer } from '@/lib/api';
 import { toast } from 'react-hot-toast';
 
 interface AssignNewTaskDialogProps {
@@ -23,13 +23,21 @@ export function AssignNewTaskDialog({ onAssign, trigger }: AssignNewTaskDialogPr
   const [dueDate, setDueDate] = useState('');
 
   useEffect(() => {
-    if (open) {
-      const loadedWriters = mockService.getWriters();
-      setWriters(loadedWriters);
-    }
+    const loadWriters = async () => {
+      if (open) {
+        try {
+          const loadedWriters = await apiService.getWriters();
+          setWriters(loadedWriters);
+        } catch (error) {
+          toast.error('Failed to load writers');
+          console.error(error);
+        }
+      }
+    };
+    loadWriters();
   }, [open]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     const writer = writers.find(w => w.id === selectedWriterId);
@@ -38,40 +46,29 @@ export function AssignNewTaskDialog({ onAssign, trigger }: AssignNewTaskDialogPr
       return;
     }
 
-    // Simulate sending email
-    console.log(`
-      To: ${writer.email}
-      Subject: New Assignment: ${taskTitle}
+    try {
+      // Create the task via API
+      await apiService.createManualTask({
+        title: taskTitle,
+        writerName: writer.name,
+        googleDocUrl: googleDocUrl,
+        dueDate: dueDate,
+      });
       
-      Salutation ${writer.name},
-
-      I am assigning this update to you. This is due ${dueDate}.
-
-      The link to Google doc with issues list: ${googleDocUrl}
-
-      Thanks,
-      Maria
-    `);
-    
-    // Create the task in the mock service
-    mockService.createManualTask({
-      title: taskTitle,
-      writerId: writer.id,
-      writerName: writer.name,
-      googleDocUrl: googleDocUrl,
-      dueDate: new Date(dueDate).getTime()
-    });
-    
-    toast.success(`Task assigned to ${writer.name}`);
-    setOpen(false);
-    
-    // Reset form
-    setSelectedWriterId('');
-    setGoogleDocUrl('');
-    setTaskTitle('');
-    setDueDate('');
-    
-    if (onAssign) onAssign();
+      toast.success(`Task assigned to ${writer.name}`);
+      setOpen(false);
+      
+      // Reset form
+      setSelectedWriterId('');
+      setGoogleDocUrl('');
+      setTaskTitle('');
+      setDueDate('');
+      
+      if (onAssign) onAssign();
+    } catch (error) {
+      toast.error('Failed to create task');
+      console.error(error);
+    }
   };
 
   return (

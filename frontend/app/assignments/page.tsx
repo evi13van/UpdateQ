@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { mockService, Issue } from '@/lib/mock-service';
+import { apiService, Issue } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -25,33 +25,52 @@ export default function AssignmentsPage() {
   const [issues, setIssues] = useState<ExtendedIssue[]>([]);
   const [filterStatus, setFilterStatus] = useState<'all' | 'in_progress' | 'completed' | 'posted'>('in_progress');
   const [searchTerm, setSearchTerm] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     loadIssues();
   }, []);
 
-  const loadIssues = () => {
-    const allIssues = mockService.getAllIssues();
-    // Filter to show only assigned or completed issues (exclude 'open' ones from this view usually, or show all)
-    // For this view, let's show assigned and completed primarily, as "Assignments" implies handoff has happened.
-    const trackedIssues = allIssues.filter(i => i.issue.status && i.issue.status !== 'open');
-    setIssues(trackedIssues);
+  const loadIssues = async () => {
+    setIsLoading(true);
+    try {
+      // Get all issues, then filter client-side
+      const allIssues = await apiService.getAllIssues();
+      // Filter to show only assigned or completed issues (exclude 'open' ones from this view)
+      const trackedIssues = allIssues.filter(i => i.issue.status && i.issue.status !== 'open');
+      setIssues(trackedIssues);
+    } catch (error) {
+      toast.error('Failed to load assignments');
+      console.error(error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleStatusUpdate = (runId: string, url: string, issueId: string, newStatus: 'completed' | 'assigned') => {
-    mockService.updateIssue(runId, url, issueId, { status: newStatus });
-    loadIssues();
-    toast.success(`Issue marked as ${newStatus}`);
+  const handleStatusUpdate = async (runId: string, url: string, issueId: string, newStatus: 'completed' | 'in_progress') => {
+    try {
+      await apiService.updateIssue(runId, issueId, { status: newStatus });
+      await loadIssues();
+      toast.success(`Issue marked as ${newStatus}`);
+    } catch (error) {
+      toast.error('Failed to update issue status');
+      console.error(error);
+    }
   };
 
-  const handleEditAssignment = (runId: string, url: string, issueId: string, data: { writerName: string; googleDocUrl: string; dueDate: string }) => {
-    mockService.updateIssue(runId, url, issueId, { 
-      assignedTo: data.writerName,
-      googleDocUrl: data.googleDocUrl,
-      dueDate: new Date(data.dueDate).getTime()
-    });
-    loadIssues();
-    toast.success('Assignment updated');
+  const handleEditAssignment = async (runId: string, url: string, issueId: string, data: { writerName: string; googleDocUrl: string; dueDate: string }) => {
+    try {
+      await apiService.updateIssue(runId, issueId, {
+        assignedTo: data.writerName,
+        googleDocUrl: data.googleDocUrl,
+        dueDate: data.dueDate,
+      });
+      await loadIssues();
+      toast.success('Assignment updated');
+    } catch (error) {
+      toast.error('Failed to update assignment');
+      console.error(error);
+    }
   };
 
   const filteredIssues = issues.filter(item => {
@@ -75,7 +94,7 @@ export default function AssignmentsPage() {
           <AddWriterDialog />
           <Button 
             variant={filterStatus === 'in_progress' ? 'default' : 'outline'}
-            onClick={() => setFilterStatus('assigned')}
+            onClick={() => setFilterStatus('in_progress')}
             className="gap-2"
           >
             <Clock className="h-4 w-4" />
@@ -108,7 +127,16 @@ export default function AssignmentsPage() {
         />
       </div>
 
-      {filteredIssues.length === 0 ? (
+      {isLoading ? (
+        <Card className="border-dashed border-white/10 bg-transparent">
+          <CardContent className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="h-16 w-16 rounded-full bg-slate-800 flex items-center justify-center mb-4">
+              <Clock className="h-8 w-8 text-slate-400 animate-pulse" />
+            </div>
+            <h3 className="text-xl font-medium text-white mb-2">Loading...</h3>
+          </CardContent>
+        </Card>
+      ) : filteredIssues.length === 0 ? (
         <Card className="border-dashed border-white/10 bg-transparent">
           <CardContent className="flex flex-col items-center justify-center py-20 text-center">
             <div className="h-16 w-16 rounded-full bg-slate-800 flex items-center justify-center mb-4">
@@ -199,7 +227,7 @@ export default function AssignmentsPage() {
                         size="sm" 
                         variant="outline"
                         className="w-full text-slate-400"
-                        onClick={() => handleStatusUpdate(item.runId, item.url, item.issue.id, 'assigned')}
+                        onClick={() => handleStatusUpdate(item.runId, item.url, item.issue.id, 'in_progress')}
                       >
                         Reopen
                       </Button>

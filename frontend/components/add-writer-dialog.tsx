@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { UserPlus } from 'lucide-react';
-import { mockService } from '@/lib/mock-service';
+import { apiService } from '@/lib/api';
 import { toast } from 'react-hot-toast';
 
 interface AddWriterDialogProps {
@@ -19,7 +19,7 @@ export function AddWriterDialog({ onWriterAdded, trigger }: AddWriterDialogProps
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !email) {
       toast.error('Please fill in all fields');
@@ -31,12 +31,17 @@ export function AddWriterDialog({ onWriterAdded, trigger }: AddWriterDialogProps
       return;
     }
 
-    mockService.addWriter(name, email);
-    toast.success('Writer added successfully');
-    setOpen(false);
-    setName('');
-    setEmail('');
-    if (onWriterAdded) onWriterAdded();
+    try {
+      await apiService.addWriter({ name, email });
+      toast.success('Writer added successfully');
+      setOpen(false);
+      setName('');
+      setEmail('');
+      if (onWriterAdded) onWriterAdded();
+    } catch (error) {
+      toast.error('Failed to add writer');
+      console.error(error);
+    }
   };
 
   return (

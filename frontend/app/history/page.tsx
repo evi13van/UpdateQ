@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { mockService, AnalysisRun } from '@/lib/mock-service';
+import { apiService, AnalysisRun } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -12,23 +12,37 @@ import { toast } from 'react-hot-toast';
 
 export default function HistoryPage() {
   const [runs, setRuns] = useState<AnalysisRun[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     loadRuns();
   }, []);
 
-  const loadRuns = () => {
-    const allRuns = mockService.getAllRuns();
-    setRuns(allRuns);
+  const loadRuns = async () => {
+    setIsLoading(true);
+    try {
+      const allRuns = await apiService.getAllAnalysisRuns();
+      setRuns(allRuns);
+    } catch (error) {
+      toast.error('Failed to load analysis history');
+      console.error(error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleDelete = (id: string, e: React.MouseEvent) => {
+  const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (confirm('Are you sure you want to delete this analysis run?')) {
-      mockService.deleteRun(id);
-      loadRuns();
-      toast.success('Analysis deleted');
+      try {
+        await apiService.deleteAnalysisRun(id);
+        await loadRuns();
+        toast.success('Analysis deleted');
+      } catch (error) {
+        toast.error('Failed to delete analysis');
+        console.error(error);
+      }
     }
   };
 
@@ -41,7 +55,16 @@ export default function HistoryPage() {
         </div>
       </div>
 
-      {runs.length === 0 ? (
+      {isLoading ? (
+        <Card className="border-dashed border-white/10 bg-transparent">
+          <CardContent className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="h-16 w-16 rounded-full bg-slate-800 flex items-center justify-center mb-4">
+              <History className="h-8 w-8 text-slate-400 animate-pulse" />
+            </div>
+            <h3 className="text-xl font-medium text-white mb-2">Loading...</h3>
+          </CardContent>
+        </Card>
+      ) : runs.length === 0 ? (
         <Card className="border-dashed border-white/10 bg-transparent">
           <CardContent className="flex flex-col items-center justify-center py-20 text-center">
             <div className="h-16 w-16 rounded-full bg-slate-800 flex items-center justify-center mb-4">

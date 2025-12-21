@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { mockService, AnalysisRun } from '@/lib/mock-service';
+import { apiService, AnalysisRun } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -18,15 +18,22 @@ export default function ResultsPage() {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [filterText, setFilterText] = useState('');
   const [sortConfig, setSortConfig] = useState<{ key: 'issueCount' | 'url', direction: 'asc' | 'desc' }>({ key: 'issueCount', direction: 'desc' });
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const data = mockService.getRun(runId);
-    if (data) {
-      setRun(data);
-    } else {
-      toast.error('Analysis run not found');
-      router.push('/history');
-    }
+    const loadRun = async () => {
+      setIsLoading(true);
+      try {
+        const data = await apiService.getAnalysisRun(runId);
+        setRun(data);
+      } catch (error) {
+        toast.error('Analysis run not found');
+        router.push('/history');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadRun();
   }, [runId, router]);
 
   const toggleRow = (url: string) => {
@@ -39,66 +46,54 @@ export default function ResultsPage() {
     setExpandedRows(newExpanded);
   };
 
-  const handleAssign = (url: string, issueId: string, data: { writerName: string; googleDocUrl: string; dueDate: string }) => {
-    mockService.updateIssue(runId, url, issueId, { 
-      status: 'in_progress', 
-      assignedTo: data.writerName,
-      googleDocUrl: data.googleDocUrl,
-      dueDate: new Date(data.dueDate).getTime()
-    });
-    // Refresh local state
-    const updatedRun = mockService.getRun(runId);
-    if (updatedRun) setRun(updatedRun);
-    toast.success(`Assigned to ${data.writerName}`);
+  const handleAssign = async (url: string, issueId: string, data: { writerName: string; googleDocUrl: string; dueDate: string }) => {
+    try {
+      await apiService.updateIssue(runId, issueId, {
+        status: 'in_progress',
+        assignedTo: data.writerName,
+        googleDocUrl: data.googleDocUrl,
+        dueDate: data.dueDate,
+      });
+      
+      // Refresh run data
+      const updatedRun = await apiService.getAnalysisRun(runId);
+      setRun(updatedRun);
+      toast.success(`Assigned to ${data.writerName}`);
+    } catch (error) {
+      toast.error('Failed to assign issue');
+      console.error(error);
+    }
   };
 
-  const handleExportCSV = () => {
+  const handleExportCSV = async () => {
     if (!run) return;
 
-    // Generate CSV content with proper escaping for Google Sheets/Excel
-    const headers = ['URL', 'Page Title', 'Issue Count', 'Issue Description', 'Flagged Text', 'Reasoning'];
-    
-    // Flatten the data structure: one row per issue
-    const rows: string[] = [];
-    
-    run.results.forEach(result => {
-      if (result.issues.length === 0) {
-        // Add a row even if no issues, just to show the page was checked
-        const row = [
-          result.url,
-          result.title,
-          '0',
-          'No issues found',
-          '',
-          ''
-        ];
-        rows.push(row.map(cell => `"${(cell || '').replace(/"/g, '""')}"`).join(','));
-      } else {
-        result.issues.forEach(issue => {
-          const row = [
-            result.url,
-            result.title,
-            result.issueCount.toString(),
-            issue.description,
-            issue.flaggedText,
-            issue.reasoning
-          ];
-          rows.push(row.map(cell => `"${(cell || '').replace(/"/g, '""')}"`).join(','));
-        });
-      }
-    });
-
-    const csvContent = [headers.join(','), ...rows].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `updateq_review_${run.domainContext.description.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    toast.success('CSV exported successfully');
+    try {
+      const blob = await apiService.exportAnalysisCSV(runId);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `updateq_review_${run.domainContext.description.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success('CSV exported successfully');
+    } catch (error) {
+      toast.error('Failed to export CSV');
+      console.error(error);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8 flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mx-auto mb-4"></div>
+          <p className="text-slate-400">Loading results...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!run) return null;
 

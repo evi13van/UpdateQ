@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { mockService, User } from '@/lib/mock-service';
+import { apiService, User } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,20 +11,37 @@ import { LogOut, User as UserIcon, Shield } from 'lucide-react';
 export default function SettingsPage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const currentUser = mockService.getCurrentUser();
-    if (currentUser) {
-      setUser(currentUser);
-    } else {
-      router.push('/login');
-    }
+    const loadUser = async () => {
+      setIsLoading(true);
+      const currentUser = await apiService.getCurrentUser();
+      if (currentUser) {
+        setUser(currentUser);
+      } else {
+        router.push('/login');
+      }
+      setIsLoading(false);
+    };
+    loadUser();
   }, [router]);
 
-  const handleLogout = () => {
-    mockService.logout();
+  const handleLogout = async () => {
+    await apiService.logout();
     router.push('/login');
   };
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8 flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mx-auto mb-4"></div>
+          <p className="text-slate-400">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!user) return null;
 

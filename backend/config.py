@@ -10,9 +10,10 @@ class Settings(BaseSettings):
     jwt_expires_in: int = 86400
     cors_origins: str = "http://localhost:3000"
     claude_api_key: str
-    playwright_timeout: int = 15000
+    firecrawl_api_key: str
+    playwright_timeout: int = 15000  # Kept for backward compatibility (not used)
 
-    model_config = SettingsConfigDict(env_file=".env", case_sensitive=False)
+    model_config = SettingsConfigDict(env_file=".env", case_sensitive=False, extra="ignore")
 
     @property
     def cors_origins_list(self) -> List[str]:
