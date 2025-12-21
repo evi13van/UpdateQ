@@ -6,10 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { CheckCircle2, Clock, Filter, Search, User, ArrowRight } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { CheckCircle2, Clock, Filter, Search, User, ArrowRight, FileText, Calendar, ExternalLink, Globe, Edit2 } from 'lucide-react';
+import { formatDistanceToNow, format } from 'date-fns';
 import { toast } from 'react-hot-toast';
 import Link from 'next/link';
+import { AssignIssueDialog } from '@/components/assign-issue-dialog';
+import { AddWriterDialog } from '@/components/add-writer-dialog';
 
 interface ExtendedIssue {
   runId: string;
@@ -41,6 +43,16 @@ export default function AssignmentsPage() {
     toast.success(`Issue marked as ${newStatus}`);
   };
 
+  const handleEditAssignment = (runId: string, url: string, issueId: string, data: { writerName: string; googleDocUrl: string; dueDate: string }) => {
+    mockService.updateIssue(runId, url, issueId, { 
+      assignedTo: data.writerName,
+      googleDocUrl: data.googleDocUrl,
+      dueDate: new Date(data.dueDate).getTime()
+    });
+    loadIssues();
+    toast.success('Assignment updated');
+  };
+
   const filteredIssues = issues.filter(item => {
     const matchesStatus = filterStatus === 'all' ? true : item.issue.status === filterStatus;
     const matchesSearch = 
@@ -58,8 +70,9 @@ export default function AssignmentsPage() {
           <p className="text-slate-400">Track progress of content updates handed off to your team.</p>
         </div>
         <div className="flex gap-2">
+          <AddWriterDialog />
           <Button 
-            variant={filterStatus === 'assigned' ? 'default' : 'outline'}
+            variant={filterStatus === 'in_progress' ? 'default' : 'outline'}
             onClick={() => setFilterStatus('assigned')}
             className="gap-2"
           >
@@ -144,6 +157,21 @@ export default function AssignmentsPage() {
                       <div className="flex items-center gap-2 text-sm text-slate-300">
                         <User className="h-4 w-4 text-emerald-400" />
                         <span className="font-medium">{item.issue.assignedTo || 'Unassigned'}</span>
+                        <AssignIssueDialog 
+                          trigger={
+                            <Button variant="ghost" size="icon" className="h-6 w-6 ml-1 text-slate-500 hover:text-white">
+                              <Edit2 className="h-3 w-3" />
+                            </Button>
+                          }
+                          defaultValues={{
+                            writerName: item.issue.assignedTo,
+                            googleDocUrl: item.issue.googleDocUrl,
+                            dueDate: item.issue.dueDate
+                          }}
+                          onAssign={(data) => handleEditAssignment(item.runId, item.url, item.issue.id, data)}
+                          title="Edit Assignment"
+                          confirmLabel="Save Changes"
+                        />
                       </div>
                       {item.issue.assignedAt && (
                         <div className="flex items-center gap-2 text-xs text-slate-500">
@@ -207,5 +235,6 @@ function ClipboardListIcon({ className }: { className?: string }) {
     </svg>
   )
 }
+
 
 
