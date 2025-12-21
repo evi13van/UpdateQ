@@ -190,9 +190,36 @@ class MockService {
             status: 'success',
             issueCount: 3,
             issues: [
-              { id: 'i1', description: 'Outdated year', flaggedText: 'In 2023, rates are...', reasoning: 'Current year is 2024/2025', status: 'open' },
-              { id: 'i2', description: 'Stale rate', flaggedText: '3.5% APR', reasoning: 'Current market rates are ~6-7%', status: 'open' },
-              { id: 'i3', description: 'Old deadline', flaggedText: 'Apply by Dec 2023', reasoning: 'Date has passed', status: 'open' }
+              { 
+                id: 'i1', 
+                description: 'Outdated year', 
+                flaggedText: 'In 2023, rates are...', 
+                reasoning: 'Current year is 2024/2025', 
+                status: 'in_progress',
+                assignedTo: 'Sarah Jenkins',
+                assignedAt: Date.now() - 86400000 * 2, // 2 days ago
+                dueDate: Date.now() + 86400000 * 3, // due in 3 days
+                googleDocUrl: 'https://docs.google.com/document/d/123456789'
+              },
+              { 
+                id: 'i2', 
+                description: 'Stale rate', 
+                flaggedText: '3.5% APR', 
+                reasoning: 'Current market rates are ~6-7%', 
+                status: 'open' 
+              },
+              { 
+                id: 'i3', 
+                description: 'Old deadline', 
+                flaggedText: 'Apply by Dec 2023', 
+                reasoning: 'Date has passed', 
+                status: 'completed',
+                assignedTo: 'Mike Chen',
+                assignedAt: Date.now() - 86400000 * 5,
+                completedAt: Date.now() - 86400000 * 1,
+                dueDate: Date.now() - 86400000 * 2,
+                googleDocUrl: 'https://docs.google.com/document/d/987654321'
+              }
             ]
           },
           {
@@ -251,7 +278,17 @@ class MockService {
             status: 'success',
             issueCount: 2,
             issues: [
-              { id: 'w1', description: 'Dangerous recommendation', flaggedText: 'We highly recommend FTX...', reasoning: 'FTX collapsed in late 2022.', status: 'open' },
+              { 
+                id: 'w1', 
+                description: 'Dangerous recommendation', 
+                flaggedText: 'We highly recommend FTX...', 
+                reasoning: 'FTX collapsed in late 2022.', 
+                status: 'in_progress',
+                assignedTo: 'Jessica Alverez',
+                assignedAt: Date.now() - 86400000,
+                dueDate: Date.now() + 86400000 * 5,
+                googleDocUrl: 'https://docs.google.com/document/d/abcdef123'
+              },
               { id: 'w2', description: 'Stale year', flaggedText: 'Best of 2022', reasoning: 'Content is 3+ years old.', status: 'open' }
             ]
           },
@@ -590,6 +627,7 @@ class MockService {
 }
 
 export const mockService = new MockService();
+
 
 
 
