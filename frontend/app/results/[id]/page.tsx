@@ -6,7 +6,8 @@ import { mockService, AnalysisRun } from '@/lib/mock-service';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, ChevronDown, ChevronUp, Download, Filter, Search, CheckCircle2, UserPlus, User } from 'lucide-react';
+import { ArrowLeft, ChevronDown, ChevronUp, Download, Filter, Search, CheckCircle2, User, FileText } from 'lucide-react';
+import { AssignIssueDialog } from '@/components/assign-issue-dialog';
 import { toast } from 'react-hot-toast';
 
 export default function ResultsPage() {
@@ -38,18 +39,17 @@ export default function ResultsPage() {
     setExpandedRows(newExpanded);
   };
 
-  const handleAssign = (url: string, issueId: string) => {
-    const writerName = prompt("Enter writer's name to assign this issue:");
-    if (writerName) {
-      mockService.updateIssue(runId, url, issueId, { 
-        status: 'assigned', 
-        assignedTo: writerName 
-      });
-      // Refresh local state
-      const updatedRun = mockService.getRun(runId);
-      if (updatedRun) setRun(updatedRun);
-      toast.success(`Assigned to ${writerName}`);
-    }
+  const handleAssign = (url: string, issueId: string, data: { writerName: string; googleDocUrl: string; dueDate: string }) => {
+    mockService.updateIssue(runId, url, issueId, { 
+      status: 'in_progress', 
+      assignedTo: data.writerName,
+      googleDocUrl: data.googleDocUrl,
+      dueDate: new Date(data.dueDate).getTime()
+    });
+    // Refresh local state
+    const updatedRun = mockService.getRun(runId);
+    if (updatedRun) setRun(updatedRun);
+    toast.success(`Assigned to ${data.writerName}`);
   };
 
   const handleExportCSV = () => {
@@ -212,13 +212,13 @@ export default function ResultsPage() {
                           <div key={idx} className="bg-slate-900 border border-white/10 rounded-lg p-4">
                             <div className="flex flex-col sm:flex-row justify-between gap-4">
                               <div className="flex items-start gap-3 flex-1">
-                                <div className={`mt-1 h-2 w-2 rounded-full shrink-0 ${issue.status === 'completed' ? 'bg-emerald-500' : issue.status === 'assigned' ? 'bg-blue-500' : 'bg-amber-500'}`} />
+                                <div className={`mt-1 h-2 w-2 rounded-full shrink-0 ${issue.status === 'posted' ? 'bg-blue-500' : issue.status === 'completed' ? 'bg-emerald-500' : issue.status === 'in_progress' ? 'bg-amber-500' : 'bg-slate-500'}`} />
                                 <div className="space-y-2 w-full">
                                   <div className="flex items-center justify-between">
                                     <p className="text-sm font-medium text-amber-400">{issue.description}</p>
                                     {issue.status !== 'open' && (
                                       <Badge variant="outline" className="text-xs">
-                                        {issue.status === 'assigned' ? `Assigned to ${issue.assignedTo}` : 'Completed'}
+                                        {issue.status === 'in_progress' ? `In Progress: ${issue.assignedTo}` : issue.status === 'completed' ? 'Returned' : 'Posted'}
                                       </Badge>
                                     )}
                                   </div>
@@ -233,24 +233,21 @@ export default function ResultsPage() {
                               
                               <div className="flex items-start">
                                 {issue.status === 'open' ? (
-                                  <Button 
-                                    size="sm" 
-                                    variant="outline" 
-                                    className="whitespace-nowrap"
-                                    onClick={() => handleAssign(result.url, issue.id)}
-                                  >
-                                    <UserPlus className="mr-2 h-3 w-3" />
-                                    Assign
-                                  </Button>
-                                ) : issue.status === 'assigned' ? (
+                                  <AssignIssueDialog onAssign={(data) => handleAssign(result.url, issue.id, data)} />
+                                ) : issue.status === 'in_progress' ? (
                                   <div className="flex items-center gap-2 text-sm text-slate-400 bg-slate-950 px-3 py-1.5 rounded-md border border-white/5">
                                     <User className="h-3 w-3" />
                                     {issue.assignedTo}
                                   </div>
-                                ) : (
+                                ) : issue.status === 'completed' ? (
                                   <div className="flex items-center gap-2 text-sm text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-md border border-emerald-500/20">
+                                    <FileText className="h-3 w-3" />
+                                    Returned
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-2 text-sm text-blue-400 bg-blue-500/10 px-3 py-1.5 rounded-md border border-blue-500/20">
                                     <CheckCircle2 className="h-3 w-3" />
-                                    Resolved
+                                    Posted
                                   </div>
                                 )}
                               </div>
@@ -274,6 +271,7 @@ export default function ResultsPage() {
     </div>
   );
 }
+
 
 
 
