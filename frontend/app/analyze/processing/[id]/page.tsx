@@ -2,50 +2,65 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { mockService, AnalysisRun } from '@/lib/mock-service';
+import { apiService } from '@/lib/api';
 import { Loader2, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { toast } from 'react-hot-toast';
+
+interface AnalysisRun {
+  id: string;
+  status: string;
+  urlCount: number;
+  totalIssues: number;
+  results?: any[];
+}
 
 export default function ProcessingPage() {
   const router = useRouter();
   const params = useParams();
   const runId = params.id as string;
-  const [status, setStatus] = useState<'processing' | 'mismatch' | 'completed'>('processing');
+  const [status, setStatus] = useState<'processing' | 'completed' | 'error'>('processing');
   const [run, setRun] = useState<AnalysisRun | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Check authentication
+    if (!apiService.isAuthenticated()) {
+      toast.error('Please log in to continue');
+      router.push('/login');
+      return;
+    }
+
     // Poll for status
-    const interval = setInterval(() => {
-      const currentRun = mockService.getRun(runId);
-      if (currentRun) {
+    const pollStatus = async () => {
+      try {
+        const currentRun = await apiService.getAnalysisRun(runId);
         setRun(currentRun);
         
         if (currentRun.status === 'completed') {
           setStatus('completed');
-          clearInterval(interval);
+        } else if (currentRun.status === 'failed') {
+          setStatus('error');
+          setError('Analysis failed. Please try again.');
         }
+      } catch (err) {
+        console.error('Error fetching analysis run:', err);
+        setStatus('error');
+        setError(err instanceof Error ? err.message : 'Failed to fetch analysis status');
       }
-    }, 1000);
+    };
 
-    // Simulate a "Context Mismatch" event randomly for demo purposes
-    // In a real app, this would come from the backend state
-    const mismatchTimer = setTimeout(() => {
-      if (Math.random() > 0.7) { // 30% chance of mismatch simulation
-        setStatus('mismatch');
-      }
-    }, 2000);
+    // Initial fetch
+    pollStatus();
+
+    // Poll every 2 seconds
+    const interval = setInterval(pollStatus, 2000);
 
     return () => {
       clearInterval(interval);
-      clearTimeout(mismatchTimer);
     };
-  }, [runId]);
-
-  const handleContinue = () => {
-    setStatus('processing');
-    // In real app, would send API call to resume
-  };
+  }, [runId, router]);
 
   const handleViewResults = () => {
     router.push(`/results/${runId}`);
@@ -73,24 +88,21 @@ export default function ProcessingPage() {
           </div>
         )}
 
-        {status === 'mismatch' && (
-          <Card className="border-amber-500/20 bg-amber-500/5 animate-in slide-in-from-bottom-5">
+        {status === 'error' && (
+          <Card className="border-red-500/20 bg-red-500/5 animate-in slide-in-from-bottom-5">
             <CardContent className="pt-6 space-y-4">
-              <div className="mx-auto w-16 h-16 bg-amber-500/20 rounded-full flex items-center justify-center">
-                <AlertTriangle className="h-8 w-8 text-amber-500" />
+              <div className="mx-auto w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center">
+                <AlertTriangle className="h-8 w-8 text-red-500" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-white mb-2">Context Mismatch Detected</h2>
+                <h2 className="text-xl font-bold text-white mb-2">Analysis Failed</h2>
                 <p className="text-slate-300 text-sm">
-                  Some pages appear to be about &quot;Automotive Loans&quot; but your context is configured for &quot;Mortgages&quot;.
+                  {error || 'An error occurred during analysis. Please try again.'}
                 </p>
               </div>
               <div className="flex gap-3 pt-2">
                 <Button variant="outline" className="flex-1" onClick={() => router.push('/analyze')}>
-                  Cancel
-                </Button>
-                <Button className="flex-1 bg-amber-500 hover:bg-amber-600 text-black" onClick={handleContinue}>
-                  Continue Anyway
+                  Start New Analysis
                 </Button>
               </div>
             </CardContent>
@@ -105,7 +117,7 @@ export default function ProcessingPage() {
             <div>
               <h2 className="text-2xl font-bold text-white mb-2">Analysis Complete</h2>
               <p className="text-slate-400 mb-6">
-                We found {run?.totalIssues} potential issues across {run?.urlCount} pages.
+                We found {run?.totalIssues || 0} potential issues across {run?.urlCount || 0} pages.
               </p>
               <Button size="lg" onClick={handleViewResults} className="shadow-lg shadow-emerald-500/20">
                 View Results

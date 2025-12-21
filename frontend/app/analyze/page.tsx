@@ -6,15 +6,23 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { mockService, DomainContext } from '@/lib/mock-service';
+import { apiService } from '@/lib/api';
 import { toast } from 'react-hot-toast';
 import { ArrowRight, History, Save, Wand2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+
+interface DomainContext {
+  id: string;
+  description: string;
+  entityTypes: string;
+  stalenessRules: string;
+}
 
 export default function AnalyzePage() {
   const router = useRouter();
   const [urls, setUrls] = useState('');
   const [savedContexts, setSavedContexts] = useState<DomainContext[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Form State
   const [description, setDescription] = useState('');
@@ -22,10 +30,19 @@ export default function AnalyzePage() {
   const [stalenessRules, setStalenessRules] = useState('');
 
   useEffect(() => {
-    // Load saved contexts
-    const contexts = mockService.getDomainContexts();
-    setSavedContexts(contexts);
-  }, []);
+    // Check if user is authenticated
+    if (!apiService.isAuthenticated()) {
+      toast.error('Please log in to continue');
+      router.push('/login');
+      return;
+    }
+
+    // Load saved contexts from localStorage
+    const savedContextsStr = localStorage.getItem('domain_contexts');
+    if (savedContextsStr) {
+      setSavedContexts(JSON.parse(savedContextsStr));
+    }
+  }, [router]);
 
   const handleLoadContext = (context: DomainContext) => {
     setDescription(context.description);
@@ -63,22 +80,37 @@ export default function AnalyzePage() {
       return;
     }
 
+    setIsSubmitting(true);
+
     try {
-      // Save context
-      const context = mockService.saveDomainContext({
+      // Save context to localStorage
+      const context: DomainContext = {
+        id: Date.now().toString(),
+        description,
+        entityTypes,
+        stalenessRules
+      };
+      
+      const existingContexts = savedContexts.filter(c => c.description !== description);
+      const updatedContexts = [context, ...existingContexts].slice(0, 5); // Keep last 5
+      localStorage.setItem('domain_contexts', JSON.stringify(updatedContexts));
+
+      // Start analysis via API
+      const response = await apiService.startAnalysis(urlList, {
         description,
         entityTypes,
         stalenessRules
       });
-
-      // Start Review
-      const runId = await mockService.startAnalysis(urlList, context);
+      
+      toast.success('Analysis started!');
       
       // Redirect to processing
-      router.push(`/analyze/processing/${runId}`);
+      router.push(`/analyze/processing/${response.runId}`);
     } catch (error) {
-      toast.error('Failed to start review');
+      toast.error(error instanceof Error ? error.message : 'Failed to start review');
       console.error(error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -200,8 +232,13 @@ export default function AnalyzePage() {
         </Card>
 
         <div className="flex justify-end">
-          <Button size="lg" onClick={handleSubmit} className="w-full md:w-auto shadow-lg shadow-emerald-500/20">
-            Start Review
+          <Button
+            size="lg"
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+            className="w-full md:w-auto shadow-lg shadow-emerald-500/20"
+          >
+            {isSubmitting ? 'Starting...' : 'Start Review'}
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </div>

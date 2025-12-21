@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { mockService } from '@/lib/mock-service';
+import { apiService } from '@/lib/api';
 import { toast } from 'react-hot-toast';
 import { Loader2 } from 'lucide-react';
 
@@ -18,19 +18,23 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!email || !password) {
+      toast.error('Please enter email and password');
+      return;
+    }
+
     setIsLoading(true);
 
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    if (email && password) {
-      mockService.login(email);
+    try {
+      await apiService.login({ email, password });
       toast.success('Welcome back!');
-      router.push('/');
-    } else {
-      toast.error('Please enter email and password');
+      router.push('/analyze');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Login failed');
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   return (
@@ -86,23 +90,30 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <Button 
-            variant="outline" 
-            className="w-full border-emerald-500/20 hover:bg-emerald-500/10 hover:text-emerald-400" 
-            onClick={() => {
+          <Button
+            variant="outline"
+            className="w-full border-emerald-500/20 hover:bg-emerald-500/10 hover:text-emerald-400"
+            onClick={async () => {
               setIsLoading(true);
-              setTimeout(() => {
-                mockService.login('maria@contentmanage.com');
-                toast.success('Logged in as Maria');
-                router.push('/');
-              }, 800);
+              try {
+                await apiService.login({
+                  email: 'demo@updateq.com',
+                  password: 'demo123'
+                });
+                toast.success('Logged in as Demo User');
+                router.push('/analyze');
+              } catch (error) {
+                toast.error('Demo login failed. Please register first.');
+              } finally {
+                setIsLoading(false);
+              }
             }}
             disabled={isLoading}
           >
-            Demo as Maria (Content Manager)
+            Demo Login
           </Button>
           <p className="text-xs text-center text-slate-500 mt-2">
-            (maria@contentmanage.com / fixmycontent)
+            (demo@updateq.com / demo123)
           </p>
         </CardContent>
         <CardFooter className="flex justify-center">

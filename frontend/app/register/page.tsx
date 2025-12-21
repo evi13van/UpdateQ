@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { mockService } from '@/lib/mock-service';
+import { apiService } from '@/lib/api';
 import { toast } from 'react-hot-toast';
 import { Loader2 } from 'lucide-react';
 
@@ -25,19 +25,25 @@ export default function RegisterPage() {
       return;
     }
 
+    if (!email || !password) {
+      toast.error('Please fill in all fields');
+      return;
+    }
+
     setIsLoading(true);
 
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    if (email && password) {
-      mockService.register(email);
+    try {
+      await apiService.register({ email, password });
       toast.success('Account created successfully!');
-      router.push('/');
-    } else {
-      toast.error('Please fill in all fields');
+      
+      // Auto-login after registration
+      await apiService.login({ email, password });
+      router.push('/analyze');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Registration failed');
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   return (
