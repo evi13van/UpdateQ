@@ -20,7 +20,7 @@ interface ExtendedIssue {
 
 export default function AssignmentsPage() {
   const [issues, setIssues] = useState<ExtendedIssue[]>([]);
-  const [filterStatus, setFilterStatus] = useState<'all' | 'assigned' | 'completed'>('assigned');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'in_progress' | 'completed' | 'posted'>('in_progress');
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
@@ -207,4 +207,5 @@ function ClipboardListIcon({ className }: { className?: string }) {
     </svg>
   )
 }
+
 
