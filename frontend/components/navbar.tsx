@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, PlusCircle, History, Settings, LogOut, Menu, X } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, History, Settings, LogOut, Menu, X, ClipboardList } from 'lucide-react';
 import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
 
@@ -29,6 +29,7 @@ const Navbar = () => {
   const navItems = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
     { name: 'New Review', href: '/analyze', icon: PlusCircle },
+    { name: 'Assignments', href: '/assignments', icon: ClipboardList },
     { name: 'History', href: '/history', icon: History },
     { name: 'Settings', href: '/settings', icon: Settings },
   ];
@@ -142,4 +143,5 @@ const Navbar = () => {
 };
 
 export default Navbar;
+
 

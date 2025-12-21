@@ -6,7 +6,7 @@ import { mockService, AnalysisRun } from '@/lib/mock-service';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, ChevronDown, ChevronUp, Download, Filter, Search, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, ChevronDown, ChevronUp, Download, Filter, Search, CheckCircle2, UserPlus, User } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 export default function ResultsPage() {
@@ -36,6 +36,20 @@ export default function ResultsPage() {
       newExpanded.add(url);
     }
     setExpandedRows(newExpanded);
+  };
+
+  const handleAssign = (url: string, issueId: string) => {
+    const writerName = prompt("Enter writer's name to assign this issue:");
+    if (writerName) {
+      mockService.updateIssue(runId, url, issueId, { 
+        status: 'assigned', 
+        assignedTo: writerName 
+      });
+      // Refresh local state
+      const updatedRun = mockService.getRun(runId);
+      if (updatedRun) setRun(updatedRun);
+      toast.success(`Assigned to ${writerName}`);
+    }
   };
 
   const handleExportCSV = () => {
@@ -196,16 +210,49 @@ export default function ResultsPage() {
                       <div className="grid gap-4">
                         {result.issues.map((issue, idx) => (
                           <div key={idx} className="bg-slate-900 border border-white/10 rounded-lg p-4">
-                            <div className="flex items-start gap-3">
-                              <div className="mt-1 h-2 w-2 rounded-full bg-amber-500 shrink-0" />
-                              <div className="space-y-2">
-                                <p className="text-sm font-medium text-amber-400">{issue.description}</p>
-                                <div className="bg-slate-950 p-3 rounded border border-white/5 text-sm text-slate-300 font-mono">
-                                  &quot;{issue.flaggedText}&quot;
+                            <div className="flex flex-col sm:flex-row justify-between gap-4">
+                              <div className="flex items-start gap-3 flex-1">
+                                <div className={`mt-1 h-2 w-2 rounded-full shrink-0 ${issue.status === 'completed' ? 'bg-emerald-500' : issue.status === 'assigned' ? 'bg-blue-500' : 'bg-amber-500'}`} />
+                                <div className="space-y-2 w-full">
+                                  <div className="flex items-center justify-between">
+                                    <p className="text-sm font-medium text-amber-400">{issue.description}</p>
+                                    {issue.status !== 'open' && (
+                                      <Badge variant="outline" className="text-xs">
+                                        {issue.status === 'assigned' ? `Assigned to ${issue.assignedTo}` : 'Completed'}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <div className="bg-slate-950 p-3 rounded border border-white/5 text-sm text-slate-300 font-mono">
+                                    &quot;{issue.flaggedText}&quot;
+                                  </div>
+                                  <p className="text-sm text-slate-400">
+                                    <span className="font-medium text-slate-500">Reasoning:</span> {issue.reasoning}
+                                  </p>
                                 </div>
-                                <p className="text-sm text-slate-400">
-                                  <span className="font-medium text-slate-500">Reasoning:</span> {issue.reasoning}
-                                </p>
+                              </div>
+                              
+                              <div className="flex items-start">
+                                {issue.status === 'open' ? (
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline" 
+                                    className="whitespace-nowrap"
+                                    onClick={() => handleAssign(result.url, issue.id)}
+                                  >
+                                    <UserPlus className="mr-2 h-3 w-3" />
+                                    Assign
+                                  </Button>
+                                ) : issue.status === 'assigned' ? (
+                                  <div className="flex items-center gap-2 text-sm text-slate-400 bg-slate-950 px-3 py-1.5 rounded-md border border-white/5">
+                                    <User className="h-3 w-3" />
+                                    {issue.assignedTo}
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-2 text-sm text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-md border border-emerald-500/20">
+                                    <CheckCircle2 className="h-3 w-3" />
+                                    Resolved
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -227,6 +274,7 @@ export default function ResultsPage() {
     </div>
   );
 }
+
 
 
 
