@@ -22,17 +22,11 @@ UpdateQ/
 └── README.md
 ```
 
-## Quick Start
-
-**New to the project?** See [SETUP.md](./SETUP.md) for detailed step-by-step setup instructions.
-
 ## Prerequisites
 
 - Python 3.13+
 - Node.js 18+
-- MongoDB Atlas account (or connection string)
-- Firecrawl API key ([Get one here](https://firecrawl.dev))
-- Claude API key ([Get one here](https://console.anthropic.com/))
+- MongoDB Atlas account (connection URI provided)
 
 ## Backend Setup
 
@@ -52,18 +46,16 @@ UpdateQ/
    pip install -r requirements.txt
    ```
 
-4. **Create `.env` file:**
-   ```bash
-   # Create backend/.env file with the following variables:
-   # See SETUP.md for detailed instructions
-   ```
-   
-   Required environment variables:
-   - `MONGODB_URI` - MongoDB Atlas connection string
-   - `JWT_SECRET` - Secret key for JWT tokens (min 32 chars)
-   - `CLAUDE_API_KEY` - Anthropic Claude API key
-   - `FIRECRAWL_API_KEY` - Firecrawl API key
-   - `CORS_ORIGINS` - Allowed origins (default: http://localhost:3000)
+4. **Environment variables setup:**
+   - Create `backend/.env` file with required variables (see `.env.example`)
+   - Required: `MONGODB_URI`, `JWT_SECRET`, `CLAUDE_API_KEY`, `FIRECRAWL_API_KEY`
+
+5. **Configure environment variables in `backend/.env`:**
+   - `MONGODB_URI`: Your MongoDB Atlas connection string
+   - `JWT_SECRET`: Secure random string (min 32 characters)
+   - `CLAUDE_API_KEY`: Your Anthropic Claude API key
+   - `FIRECRAWL_API_KEY`: Your Firecrawl API key for web scraping
+   - `CORS_ORIGINS`: Frontend URL (default: http://localhost:3000)
 
 6. **Start the backend server:**
    ```bash
@@ -86,11 +78,8 @@ UpdateQ/
    npm install
    ```
 
-3. **Create `.env.local` file:**
-   ```bash
-   # Create frontend/.env.local file with:
-   NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
-   ```
+3. **Environment variables are already configured in `.env.local`:**
+   - API URL: `http://localhost:8000/api/v1`
 
 4. **Start the development server:**
    ```bash
@@ -155,24 +144,28 @@ UpdateQ/
 
 ## Important Notes
 
-### Required API Keys
+### API Keys Required
+The application requires two API keys for full functionality:
 
-**Claude API Key:**
-1. Get an API key from [Anthropic Console](https://console.anthropic.com/)
-2. Add to `CLAUDE_API_KEY` in `backend/.env`
-3. Required for content analysis and stale content detection
+1. **Claude API Key** (Anthropic):
+   - Get from https://console.anthropic.com/
+   - Required for AI-powered stale content detection
+   - Add to `backend/.env` as `CLAUDE_API_KEY`
 
-**Firecrawl API Key:**
-1. Get an API key from [Firecrawl](https://firecrawl.dev)
-2. Add to `FIRECRAWL_API_KEY` in `backend/.env`
-3. Required for web content extraction
+2. **Firecrawl API Key**:
+   - Get from https://firecrawl.dev/
+   - Required for web content extraction
+   - Add to `backend/.env` as `FIRECRAWL_API_KEY`
 
-Without valid API keys, the services will fail and return errors.
+Without valid API keys, the respective services will fail gracefully and return appropriate error messages.
 
 ### MongoDB Connection
-You need to provide your own MongoDB Atlas connection string in `backend/.env`.
+The MongoDB URI is already configured to connect to your Atlas cluster:
+```
+mongodb+srv://yseidl_db_user:SslKY2zzHjH0kmkM@cluster0.pozigxt.mongodb.net/?appName=Cluster0
+```
 
-The database name should be `updateq` with collections:
+The database name is `updateq` with collections:
 - `users` - User accounts
 - `analysis_runs` - Analysis runs and results
 - `writers` - Writer information
