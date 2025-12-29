@@ -20,6 +20,7 @@ const Navbar = () => {
   }, [pathname]);
 
   const handleLogout = () => {
+    localStorage.removeItem('updateq_token');
     localStorage.removeItem('updateq_user');
     router.push('/login');
   };
@@ -29,8 +30,8 @@ const Navbar = () => {
   const navItems = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
     { name: 'New Review', href: '/analyze', icon: PlusCircle },
-    { name: 'Assignments', href: '/assignments', icon: ClipboardList },
     { name: 'History', href: '/history', icon: History },
+    { name: 'Assignments', href: '/assignments', icon: ClipboardList },
     { name: 'Settings', href: '/settings', icon: Settings },
   ];
 
