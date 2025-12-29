@@ -2,13 +2,30 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { apiService, AnalysisRun } from '@/lib/api';
+import { apiService, AnalysisRun, SuggestedSource } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, ChevronDown, ChevronUp, Download, Filter, Search, CheckCircle2, User, FileText } from 'lucide-react';
-import { AssignIssueDialog } from '@/components/assign-issue-dialog';
+import { ArrowLeft, ChevronDown, ChevronUp, Download, Filter, Search, CheckCircle2, Sparkles } from 'lucide-react';
+import { ResearchDrawer } from '@/components/research-drawer';
 import { toast } from 'react-hot-toast';
+
+// Helper function to render markdown bold text
+const renderBoldText = (text: string): React.ReactNode => {
+  if (!text) return null;
+  
+  // Split by **text** pattern and render with bold
+  const parts = text.split(/(\*\*.*?\*\*)/g);
+  
+  return parts.map((part, index) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      // Remove the ** markers and render as bold
+      const boldText = part.slice(2, -2);
+      return <strong key={index} className="text-amber-400 font-semibold">{boldText}</strong>;
+    }
+    return <span key={index}>{part}</span>;
+  });
+};
 
 export default function ResultsPage() {
   const params = useParams();
@@ -19,6 +36,12 @@ export default function ResultsPage() {
   const [filterText, setFilterText] = useState('');
   const [sortConfig, setSortConfig] = useState<{ key: 'issueCount' | 'url', direction: 'asc' | 'desc' }>({ key: 'issueCount', direction: 'desc' });
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Research drawer state
+  const [researchDrawerOpen, setResearchDrawerOpen] = useState(false);
+  const [currentIssue, setCurrentIssue] = useState<{ id: string; description: string; url: string } | null>(null);
+  const [researchSources, setResearchSources] = useState<SuggestedSource[]>([]);
+  const [isResearching, setIsResearching] = useState(false);
 
   useEffect(() => {
     const loadRun = async () => {
@@ -46,24 +69,6 @@ export default function ResultsPage() {
     setExpandedRows(newExpanded);
   };
 
-  const handleAssign = async (url: string, issueId: string, data: { writerName: string; googleDocUrl: string; dueDate: string }) => {
-    try {
-      await apiService.updateIssue(runId, issueId, {
-        status: 'in_progress',
-        assignedTo: data.writerName,
-        googleDocUrl: data.googleDocUrl,
-        dueDate: data.dueDate,
-      });
-      
-      // Refresh run data
-      const updatedRun = await apiService.getAnalysisRun(runId);
-      setRun(updatedRun);
-      toast.success(`Assigned to ${data.writerName}`);
-    } catch (error) {
-      toast.error('Failed to assign issue');
-      console.error(error);
-    }
-  };
 
   const handleExportCSV = async () => {
     if (!run) return;
@@ -80,6 +85,59 @@ export default function ResultsPage() {
       toast.success('CSV exported successfully');
     } catch (error) {
       toast.error('Failed to export CSV');
+      console.error(error);
+    }
+  };
+
+  const handleFindSources = async (issueId: string, issueDescription: string, url: string) => {
+    setCurrentIssue({ id: issueId, description: issueDescription, url });
+    setResearchDrawerOpen(true);
+    setIsResearching(true);
+    
+    try {
+      const sources = await apiService.researchIssue(runId, issueId);
+      setResearchSources(sources);
+      toast.success(`Found ${sources.length} sources`);
+    } catch (error) {
+      toast.error('Failed to find sources');
+      console.error(error);
+      setResearchSources([]);
+    } finally {
+      setIsResearching(false);
+    }
+  };
+
+  const handleRefineSearch = async (query: string) => {
+    // For now, we'll just re-trigger the research
+    // In a more advanced implementation, we could pass the query to the backend
+    if (currentIssue) {
+      setIsResearching(true);
+      try {
+        const sources = await apiService.researchIssue(runId, currentIssue.id);
+        setResearchSources(sources);
+        toast.success(`Found ${sources.length} sources`);
+      } catch (error) {
+        toast.error('Failed to refine search');
+        console.error(error);
+      } finally {
+        setIsResearching(false);
+      }
+    }
+  };
+
+  const handleSaveSources = async (selectedSources: SuggestedSource[]) => {
+    if (!currentIssue) return;
+    
+    try {
+      await apiService.saveIssueSources(runId, currentIssue.id, selectedSources);
+      
+      // Refresh run data to show updated sources
+      const updatedRun = await apiService.getAnalysisRun(runId);
+      setRun(updatedRun);
+      
+      toast.success(`Attached ${selectedSources.length} source${selectedSources.length !== 1 ? 's' : ''}`);
+    } catch (error) {
+      toast.error('Failed to save sources');
       console.error(error);
     }
   };
@@ -217,34 +275,41 @@ export default function ResultsPage() {
                                       </Badge>
                                     )}
                                   </div>
-                                  <div className="bg-slate-950 p-3 rounded border border-white/5 text-sm text-slate-300 font-mono">
-                                    &quot;{issue.flaggedText}&quot;
+                                  <div className="bg-slate-950 p-3 rounded border border-white/5 text-sm text-slate-300 leading-relaxed">
+                                    {issue.contextExcerpt ? (
+                                      <div className="space-y-1">
+                                        {renderBoldText(issue.contextExcerpt)}
+                                      </div>
+                                    ) : (
+                                      <div className="font-mono">
+                                        &quot;{issue.flaggedText}&quot;
+                                      </div>
+                                    )}
                                   </div>
                                   <p className="text-sm text-slate-400">
                                     <span className="font-medium text-slate-500">Reasoning:</span> {issue.reasoning}
                                   </p>
+                                  
+                                  {/* Suggested Sources Badge */}
+                                  {issue.suggestedSources && issue.suggestedSources.length > 0 && (
+                                    <Badge variant="outline" className="text-xs bg-emerald-500/10 text-emerald-400 border-emerald-500/30">
+                                      {issue.suggestedSources.length} Source{issue.suggestedSources.length !== 1 ? 's' : ''} Attached
+                                    </Badge>
+                                  )}
                                 </div>
                               </div>
                               
-                              <div className="flex items-start">
-                                {issue.status === 'open' ? (
-                                  <AssignIssueDialog onAssign={(data) => handleAssign(result.url, issue.id, data)} />
-                                ) : issue.status === 'in_progress' ? (
-                                  <div className="flex items-center gap-2 text-sm text-slate-400 bg-slate-950 px-3 py-1.5 rounded-md border border-white/5">
-                                    <User className="h-3 w-3" />
-                                    {issue.assignedTo}
-                                  </div>
-                                ) : issue.status === 'completed' ? (
-                                  <div className="flex items-center gap-2 text-sm text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-md border border-emerald-500/20">
-                                    <FileText className="h-3 w-3" />
-                                    Returned
-                                  </div>
-                                ) : (
-                                  <div className="flex items-center gap-2 text-sm text-blue-400 bg-blue-500/10 px-3 py-1.5 rounded-md border border-blue-500/20">
-                                    <CheckCircle2 className="h-3 w-3" />
-                                    Posted
-                                  </div>
-                                )}
+                              <div className="flex items-start gap-2">
+                                {/* Find Sources Button */}
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleFindSources(issue.id, issue.description, result.url)}
+                                  className="text-xs"
+                                >
+                                  <Sparkles className="h-3 w-3 mr-1" />
+                                  Find Sources
+                                </Button>
                               </div>
                             </div>
                           </div>
@@ -263,6 +328,17 @@ export default function ResultsPage() {
           ))}
         </div>
       </div>
+
+      {/* Research Drawer */}
+      <ResearchDrawer
+        open={researchDrawerOpen}
+        onOpenChange={setResearchDrawerOpen}
+        issueDescription={currentIssue?.description || ''}
+        sources={researchSources}
+        isLoading={isResearching}
+        onRefineSearch={handleRefineSearch}
+        onSaveSources={handleSaveSources}
+      />
     </div>
   );
 }

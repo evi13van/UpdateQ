@@ -80,41 +80,6 @@ export default function LoginPage() {
               Sign In
             </Button>
           </form>
-
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-white/10" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-slate-900 px-2 text-slate-500">Or try it out</span>
-            </div>
-          </div>
-
-          <Button
-            variant="outline"
-            className="w-full border-emerald-500/20 hover:bg-emerald-500/10 hover:text-emerald-400"
-            onClick={async () => {
-              setIsLoading(true);
-              try {
-                await apiService.login({
-                  email: 'demo@updateq.com',
-                  password: 'demo123'
-                });
-                toast.success('Logged in as Demo User');
-                router.push('/analyze');
-              } catch (error) {
-                toast.error('Demo login failed. Please register first.');
-              } finally {
-                setIsLoading(false);
-              }
-            }}
-            disabled={isLoading}
-          >
-            Demo Login
-          </Button>
-          <p className="text-xs text-center text-slate-500 mt-2">
-            (demo@updateq.com / demo123)
-          </p>
         </CardContent>
         <CardFooter className="flex justify-center">
           <p className="text-sm text-slate-400">

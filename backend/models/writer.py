@@ -7,6 +7,10 @@ class WriterCreate(BaseModel):
     email: EmailStr
 
 
+class WriterUpdate(BaseModel):
+    name: str | None = None
+    email: EmailStr | None = None
+
 class WriterResponse(BaseModel):
     id: str
     name: str

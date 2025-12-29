@@ -13,10 +13,24 @@ class DomainContext(BaseModel):
         populate_by_name = True
 
 
+class SuggestedSource(BaseModel):
+    url: str
+    title: str
+    snippet: str
+    publication_date: Optional[str] = Field(None, alias="publicationDate")
+    domain: Optional[str] = None
+    confidence: Optional[str] = None  # 'High' or 'Medium'
+    is_accepted: bool = Field(False, alias="isAccepted")
+
+    class Config:
+        populate_by_name = True
+
+
 class Issue(BaseModel):
     id: str
     description: str
     flagged_text: str = Field(alias="flaggedText")
+    context_excerpt: Optional[str] = Field(None, alias="contextExcerpt")
     reasoning: str
     status: Optional[str] = "open"
     assigned_to: Optional[str] = Field(None, alias="assignedTo")
@@ -24,6 +38,7 @@ class Issue(BaseModel):
     completed_at: Optional[datetime] = Field(None, alias="completedAt")
     google_doc_url: Optional[str] = Field(None, alias="googleDocUrl")
     due_date: Optional[datetime] = Field(None, alias="dueDate")
+    suggested_sources: List[SuggestedSource] = Field(default_factory=list, alias="suggestedSources")
 
     class Config:
         populate_by_name = True
@@ -32,6 +47,12 @@ class Issue(BaseModel):
 class URLResult(BaseModel):
     url: str
     title: str
+    meta_title: Optional[str] = Field(None, alias="metaTitle")
+    meta_description: Optional[str] = Field(None, alias="metaDescription")
+    h1s: List[str] = Field(default_factory=list, alias="h1s")
+    h2s: List[str] = Field(default_factory=list, alias="h2s")
+    h3s: List[str] = Field(default_factory=list, alias="h3s")
+    h4s: List[str] = Field(default_factory=list, alias="h4s")
     status: str
     issue_count: int = Field(alias="issueCount")
     issues: List[Issue] = []

@@ -18,10 +18,21 @@ export interface DomainContext {
   timestamp?: number;
 }
 
+export interface SuggestedSource {
+  url: string;
+  title: string;
+  snippet: string;
+  publicationDate?: string;
+  domain?: string;
+  confidence?: string;
+  isAccepted: boolean;
+}
+
 export interface Issue {
   id: string;
   description: string;
   flaggedText: string;
+  contextExcerpt?: string;
   reasoning: string;
   status?: string;
   assignedTo?: string;
@@ -29,6 +40,7 @@ export interface Issue {
   completedAt?: number;
   googleDocUrl?: string;
   dueDate?: number;
+  suggestedSources?: SuggestedSource[];
 }
 
 export interface DetectionResult {
@@ -240,6 +252,7 @@ class ApiService {
           id: string;
           description: string;
           flaggedText: string;
+          contextExcerpt?: string;
           reasoning: string;
           status?: string;
           assignedTo?: string;
@@ -273,6 +286,7 @@ class ApiService {
           id: issue.id,
           description: issue.description,
           flaggedText: issue.flaggedText,
+          contextExcerpt: issue.contextExcerpt,
           reasoning: issue.reasoning,
           status: issue.status,
           assignedTo: issue.assignedTo,
@@ -349,6 +363,7 @@ class ApiService {
       id: string;
       description: string;
       flaggedText: string;
+      contextExcerpt?: string;
       reasoning: string;
       status?: string;
       assignedTo?: string;
@@ -365,6 +380,7 @@ class ApiService {
       id: response.id,
       description: response.description,
       flaggedText: response.flaggedText,
+      contextExcerpt: response.contextExcerpt,
       reasoning: response.reasoning,
       status: response.status,
       assignedTo: response.assignedTo,
@@ -391,6 +407,7 @@ class ApiService {
           id: string;
           description: string;
           flaggedText: string;
+          contextExcerpt?: string;
           reasoning: string;
           status?: string;
           assignedTo?: string;
@@ -410,6 +427,7 @@ class ApiService {
         id: item.issue.id,
         description: item.issue.description,
         flaggedText: item.issue.flaggedText,
+        contextExcerpt: item.issue.contextExcerpt,
         reasoning: item.issue.reasoning,
         status: item.issue.status,
         assignedTo: item.issue.assignedTo,
@@ -476,6 +494,58 @@ class ApiService {
       name: response.name,
       email: response.email,
     };
+  }
+
+  async updateWriter(writerId: string, data: { name?: string; email?: string }): Promise<Writer> {
+    const response = await apiCall<{
+      id: string;
+      name: string;
+      email: string;
+    }>(`/writers/${writerId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+
+    return {
+      id: response.id,
+      name: response.name,
+      email: response.email,
+    };
+  }
+
+  // Research
+  async researchIssue(runId: string, issueId: string): Promise<SuggestedSource[]> {
+    const response = await apiCall<{
+      sources: Array<{
+        url: string;
+        title: string;
+        snippet: string;
+        publicationDate?: string;
+        domain?: string;
+        confidence?: string;
+        isAccepted: boolean;
+      }>;
+    }>(`/analysis/runs/${runId}/issues/${issueId}/research`, {
+      method: 'POST',
+    });
+
+    return response.sources;
+  }
+
+  async saveIssueSources(
+    runId: string,
+    issueId: string,
+    sources: SuggestedSource[]
+  ): Promise<{ message: string; count: number }> {
+    const response = await apiCall<{ message: string; count: number }>(
+      `/analysis/runs/${runId}/issues/${issueId}/sources`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ sources }),
+      }
+    );
+
+    return response;
   }
 
   // Domain Context (localStorage only - as per PRD)

@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:3000"
     claude_api_key: str
     firecrawl_api_key: str
+    perplexity_api_key: str
     playwright_timeout: int = 15000  # Kept for backward compatibility (not used)
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=False, extra="ignore")

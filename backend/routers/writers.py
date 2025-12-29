@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, status, Depends
-from models.writer import WriterCreate, WriterResponse
+from models.writer import WriterCreate, WriterResponse, WriterUpdate
 from auth.dependencies import get_current_user
 from database import get_database
 from bson import ObjectId
@@ -47,4 +47,54 @@ async def add_writer(
         id=str(result.inserted_id),
         name=writer_data.name,
         email=writer_data.email
+    )
+
+
+@router.patch("/{writer_id}", response_model=WriterResponse)
+async def update_writer(
+    writer_id: str,
+    writer_data: WriterUpdate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update writer information"""
+    db = get_database()
+    
+    # Verify writer belongs to user
+    writer = await db.writers.find_one({
+        "_id": ObjectId(writer_id),
+        "user_id": ObjectId(current_user["id"])
+    })
+    
+    if not writer:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Writer not found"
+        )
+    
+    # Build update dict with only provided fields
+    update_data = {}
+    if writer_data.name is not None:
+        update_data["name"] = writer_data.name
+    if writer_data.email is not None:
+        update_data["email"] = writer_data.email
+    
+    if not update_data:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No fields to update"
+        )
+    
+    # Update writer
+    await db.writers.update_one(
+        {"_id": ObjectId(writer_id)},
+        {"$set": update_data}
+    )
+    
+    # Get updated writer
+    updated_writer = await db.writers.find_one({"_id": ObjectId(writer_id)})
+    
+    return WriterResponse(
+        id=str(updated_writer["_id"]),
+        name=updated_writer["name"],
+        email=updated_writer["email"]
     )

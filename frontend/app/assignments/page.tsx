@@ -3,16 +3,17 @@
 import React, { useEffect, useState } from 'react';
 import { apiService, Issue } from '@/lib/api';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { CheckCircle2, Clock, Filter, Search, User, ArrowRight, FileText, Calendar, ExternalLink, Globe, Edit2 } from 'lucide-react';
-import { formatDistanceToNow, format } from 'date-fns';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { CheckCircle2, Clock, Search, User, ArrowRight, Edit2, ClipboardList, Users } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'react-hot-toast';
 import Link from 'next/link';
 import { AssignIssueDialog } from '@/components/assign-issue-dialog';
-import { AddWriterDialog } from '@/components/add-writer-dialog';
 import { AssignNewTaskDialog } from '@/components/assign-new-task-dialog';
+import { WritersManagement } from '@/components/writers-management';
 
 interface ExtendedIssue {
   runId: string;
@@ -26,6 +27,7 @@ export default function AssignmentsPage() {
   const [filterStatus, setFilterStatus] = useState<'all' | 'in_progress' | 'completed' | 'posted'>('in_progress');
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('assignments');
 
   useEffect(() => {
     loadIssues();
@@ -83,162 +85,193 @@ export default function AssignmentsPage() {
   });
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-white">Writer Assignments</h1>
-          <p className="text-slate-400">Track progress of content updates handed off to your team.</p>
-        </div>
-        <div className="flex gap-2">
-          <AssignNewTaskDialog onAssign={loadIssues} />
-          <AddWriterDialog />
-          <Button 
-            variant={filterStatus === 'in_progress' ? 'default' : 'outline'}
-            onClick={() => setFilterStatus('in_progress')}
-            className="gap-2"
-          >
-            <Clock className="h-4 w-4" />
-            In Progress
-          </Button>
-          <Button 
-            variant={filterStatus === 'completed' ? 'default' : 'outline'}
-            onClick={() => setFilterStatus('completed')}
-            className="gap-2"
-          >
-            <CheckCircle2 className="h-4 w-4" />
-            Completed
-          </Button>
-          <Button 
-            variant={filterStatus === 'all' ? 'default' : 'outline'}
-            onClick={() => setFilterStatus('all')}
-          >
-            All
-          </Button>
-        </div>
+    <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-white mb-2">Assignments & Team</h1>
+        <p className="text-slate-400">Manage content assignments and your writing team</p>
       </div>
 
-      <div className="mb-6 relative max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
-        <Input 
-          placeholder="Search by title, writer, or issue..." 
-          className="pl-10"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-      </div>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="grid w-full max-w-md grid-cols-2 bg-slate-900/50 border border-white/10">
+          <TabsTrigger 
+            value="assignments" 
+            className="data-[state=active]:bg-emerald-500 data-[state=active]:text-white gap-2"
+          >
+            <ClipboardList className="h-4 w-4" />
+            Assignments
+          </TabsTrigger>
+          <TabsTrigger 
+            value="writers"
+            className="data-[state=active]:bg-emerald-500 data-[state=active]:text-white gap-2"
+          >
+            <Users className="h-4 w-4" />
+            Writers
+          </TabsTrigger>
+        </TabsList>
 
-      {isLoading ? (
-        <Card className="border-dashed border-white/10 bg-transparent">
-          <CardContent className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="h-16 w-16 rounded-full bg-slate-800 flex items-center justify-center mb-4">
-              <Clock className="h-8 w-8 text-slate-400 animate-pulse" />
+        <TabsContent value="assignments" className="space-y-6">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div className="flex gap-2 flex-wrap">
+              <AssignNewTaskDialog onAssign={loadIssues} />
+              <Button 
+                variant={filterStatus === 'in_progress' ? 'default' : 'outline'}
+                onClick={() => setFilterStatus('in_progress')}
+                className="gap-2"
+              >
+                <Clock className="h-4 w-4" />
+                In Progress
+              </Button>
+              <Button 
+                variant={filterStatus === 'completed' ? 'default' : 'outline'}
+                onClick={() => setFilterStatus('completed')}
+                className="gap-2"
+              >
+                <CheckCircle2 className="h-4 w-4" />
+                Completed
+              </Button>
+              <Button 
+                variant={filterStatus === 'all' ? 'default' : 'outline'}
+                onClick={() => setFilterStatus('all')}
+              >
+                All
+              </Button>
             </div>
-            <h3 className="text-xl font-medium text-white mb-2">Loading...</h3>
-          </CardContent>
-        </Card>
-      ) : filteredIssues.length === 0 ? (
-        <Card className="border-dashed border-white/10 bg-transparent">
-          <CardContent className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="h-16 w-16 rounded-full bg-slate-800 flex items-center justify-center mb-4">
-              <ClipboardListIcon className="h-8 w-8 text-slate-400" />
-            </div>
-            <h3 className="text-xl font-medium text-white mb-2">No assignments found</h3>
-            <p className="text-slate-400 mb-6 max-w-sm">
-              Assign issues to writers from the Analysis Results page to track them here.
-            </p>
-            <Link href="/history">
-              <Button variant="outline">Go to History</Button>
-            </Link>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-4">
-          {filteredIssues.map((item) => (
-            <Card key={item.issue.id} className="bg-slate-900/50 border-white/10 hover:bg-white/5 transition-colors">
-              <CardContent className="p-6">
-                <div className="flex flex-col md:flex-row gap-6 justify-between">
-                  <div className="space-y-3 flex-1">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h3 className="font-semibold text-lg text-white mb-1">{item.pageTitle}</h3>
-                        <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-xs text-slate-500 hover:text-emerald-400 transition-colors flex items-center gap-1">
-                          {item.url} <ArrowRight className="h-3 w-3" />
-                        </a>
-                      </div>
-                      <Badge variant={item.issue.status === 'completed' ? 'default' : 'warning'}>
-                        {item.issue.status === 'completed' ? 'Completed' : 'In Progress'}
-                      </Badge>
-                    </div>
+          </div>
 
-                    <div className="bg-slate-950 p-4 rounded-lg border border-white/5">
-                      <div className="flex items-start gap-3">
-                        <div className="mt-1 h-2 w-2 rounded-full bg-amber-500 shrink-0" />
-                        <div>
-                          <p className="text-sm font-medium text-amber-400 mb-1">{item.issue.description}</p>
-                          <p className="text-sm text-slate-300 mb-2">"{item.issue.flaggedText}"</p>
-                          <p className="text-xs text-slate-500">Reasoning: {item.issue.reasoning}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+          <div className="mb-6 relative max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+            <Input 
+              placeholder="Search by title, writer, or issue..." 
+              className="pl-10"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
 
-                  <div className="flex flex-col justify-between min-w-[200px] border-t md:border-t-0 md:border-l border-white/10 pt-4 md:pt-0 md:pl-6 gap-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-sm text-slate-300">
-                        <User className="h-4 w-4 text-emerald-400" />
-                        <span className="font-medium">{item.issue.assignedTo || 'Unassigned'}</span>
-                        <AssignIssueDialog 
-                          trigger={
-                            <Button variant="ghost" size="icon" className="h-6 w-6 ml-1 text-slate-500 hover:text-white">
-                              <Edit2 className="h-3 w-3" />
-                            </Button>
-                          }
-                          defaultValues={{
-                            writerName: item.issue.assignedTo,
-                            googleDocUrl: item.issue.googleDocUrl,
-                            dueDate: item.issue.dueDate
-                          }}
-                          onAssign={(data) => handleEditAssignment(item.runId, item.url, item.issue.id, data)}
-                          title="Edit Assignment"
-                          confirmLabel="Save Changes"
-                        />
-                      </div>
-                      {item.issue.assignedAt && (
-                        <div className="flex items-center gap-2 text-xs text-slate-500">
-                          <Clock className="h-3 w-3" />
-                          Assigned {formatDistanceToNow(item.issue.assignedAt, { addSuffix: true })}
-                        </div>
-                      )}
-                    </div>
-
-                    {item.issue.status !== 'completed' && (
-                      <Button 
-                        size="sm" 
-                        className="w-full"
-                        onClick={() => handleStatusUpdate(item.runId, item.url, item.issue.id, 'completed')}
-                      >
-                        <CheckCircle2 className="mr-2 h-4 w-4" />
-                        Mark Complete
-                      </Button>
-                    )}
-                    
-                    {item.issue.status === 'completed' && (
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        className="w-full text-slate-400"
-                        onClick={() => handleStatusUpdate(item.runId, item.url, item.issue.id, 'in_progress')}
-                      >
-                        Reopen
-                      </Button>
-                    )}
-                  </div>
+          {isLoading ? (
+            <Card className="border-dashed border-white/10 bg-transparent">
+              <CardContent className="flex flex-col items-center justify-center py-20 text-center">
+                <div className="h-16 w-16 rounded-full bg-slate-800 flex items-center justify-center mb-4">
+                  <Clock className="h-8 w-8 text-slate-400 animate-pulse" />
+                </div>
+                <h3 className="text-xl font-medium text-white mb-2">Loading...</h3>
+              </CardContent>
+            </Card>
+          ) : filteredIssues.length === 0 ? (
+            <Card className="border-dashed border-white/10 bg-transparent">
+              <CardContent className="flex flex-col items-center justify-center py-20 text-center">
+                <div className="h-16 w-16 rounded-full bg-slate-800 flex items-center justify-center mb-4">
+                  <ClipboardListIcon className="h-8 w-8 text-slate-400" />
+                </div>
+                <h3 className="text-xl font-medium text-white mb-2">No assignments found</h3>
+                <p className="text-slate-400 mb-6 max-w-sm">
+                  {searchTerm 
+                    ? 'Try adjusting your search terms or filters'
+                    : 'Assign issues to writers from the Analysis Results page or create a new task to track them here.'
+                  }
+                </p>
+                <div className="flex gap-3">
+                  <AssignNewTaskDialog onAssign={loadIssues} />
+                  <Link href="/history">
+                    <Button variant="outline">Go to History</Button>
+                  </Link>
                 </div>
               </CardContent>
             </Card>
-          ))}
-        </div>
-      )}
+          ) : (
+            <div className="grid gap-4">
+              {filteredIssues.map((item) => (
+                <Card key={item.issue.id} className="bg-slate-900/50 border-white/10 hover:bg-white/5 transition-colors">
+                  <CardContent className="p-6">
+                    <div className="flex flex-col md:flex-row gap-6 justify-between">
+                      <div className="space-y-3 flex-1">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h3 className="font-semibold text-lg text-white mb-1">{item.pageTitle}</h3>
+                            <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-xs text-slate-500 hover:text-emerald-400 transition-colors flex items-center gap-1">
+                              {item.url} <ArrowRight className="h-3 w-3" />
+                            </a>
+                          </div>
+                          <Badge variant={item.issue.status === 'completed' ? 'default' : 'warning'}>
+                            {item.issue.status === 'completed' ? 'Completed' : 'In Progress'}
+                          </Badge>
+                        </div>
+
+                        <div className="bg-slate-950 p-4 rounded-lg border border-white/5">
+                          <div className="flex items-start gap-3">
+                            <div className="mt-1 h-2 w-2 rounded-full bg-amber-500 shrink-0" />
+                            <div>
+                              <p className="text-sm font-medium text-amber-400 mb-1">{item.issue.description}</p>
+                              <p className="text-sm text-slate-300 mb-2">"{item.issue.flaggedText}"</p>
+                              <p className="text-xs text-slate-500">Reasoning: {item.issue.reasoning}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col justify-between min-w-[200px] border-t md:border-t-0 md:border-l border-white/10 pt-4 md:pt-0 md:pl-6 gap-4">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 text-sm text-slate-300">
+                            <User className="h-4 w-4 text-emerald-400" />
+                            <span className="font-medium">{item.issue.assignedTo || 'Unassigned'}</span>
+                            <AssignIssueDialog 
+                              trigger={
+                                <Button variant="ghost" size="icon" className="h-6 w-6 ml-1 text-slate-500 hover:text-white">
+                                  <Edit2 className="h-3 w-3" />
+                                </Button>
+                              }
+                              defaultValues={{
+                                writerName: item.issue.assignedTo,
+                                googleDocUrl: item.issue.googleDocUrl,
+                                dueDate: item.issue.dueDate
+                              }}
+                              onAssign={(data) => handleEditAssignment(item.runId, item.url, item.issue.id, data)}
+                              title="Edit Assignment"
+                              confirmLabel="Save Changes"
+                            />
+                          </div>
+                          {item.issue.dueDate && (
+                            <div className="flex items-center gap-2 text-xs text-slate-500">
+                              <Clock className="h-3 w-3" />
+                              Due {formatDistanceToNow(item.issue.dueDate, { addSuffix: true })}
+                            </div>
+                          )}
+                        </div>
+
+                        {item.issue.status !== 'completed' && (
+                          <Button 
+                            size="sm" 
+                            className="w-full"
+                            onClick={() => handleStatusUpdate(item.runId, item.url, item.issue.id, 'completed')}
+                          >
+                            <CheckCircle2 className="mr-2 h-4 w-4" />
+                            Mark Complete
+                          </Button>
+                        )}
+                        
+                        {item.issue.status === 'completed' && (
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            className="w-full text-slate-400"
+                            onClick={() => handleStatusUpdate(item.runId, item.url, item.issue.id, 'in_progress')}
+                          >
+                            Reopen
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="writers">
+          <WritersManagement />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
@@ -265,8 +298,3 @@ function ClipboardListIcon({ className }: { className?: string }) {
     </svg>
   )
 }
-
-
-
-
-

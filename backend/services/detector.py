@@ -19,14 +19,41 @@ async def detect_stale_content(url: str, content: str, domain_context: dict) -> 
         client = Anthropic(api_key=settings.claude_api_key)
         
         current_date = datetime.now().strftime("%B %d, %Y")
+        current_year = datetime.now().year
+        one_year_ago = datetime.now().replace(year=datetime.now().year - 1).strftime("%B %d, %Y")
         
         # Construct prompt
         content_preview = content[:8000] if len(content) > 8000 else content
         print(f"[DEBUG] Sending {len(content_preview)} chars to Claude (out of {len(content)} total)")
         
-        prompt = f"""You are analyzing web content for factual decay and outdated information.
+        prompt = f"""You are a content auditor specializing in temporal accuracy and stale information detection.
 
-Current Date: {current_date}
+ANALYSIS PARAMETERS:
+- Current Reference Date: {current_date}
+- Current Year: {current_year}
+- Staleness Threshold: Content is stale if older than 1 year from {current_date}
+- One Year Ago Date: {one_year_ago}
+
+STRICT EVALUATION PROCESS (Follow this order):
+
+STEP 1 - IDENTIFY: Locate all date references (absolute or relative) in the text.
+
+STEP 2 - RESOLVE CONTEXT:
+   - If a month/day appears WITHOUT a year (e.g., "November", "March 15"), you MUST scan the surrounding text, headers, title, or byline to find the applicable year.
+   - Look for patterns like "November 21, 2025" or "Published: 2025" or "2025 Guide" in the content.
+   - If the title or header contains "{current_year}" or a future year, assume that year applies to ambiguous dates.
+   - DO NOT assume an isolated month name refers to a past occurrence.
+
+STEP 3 - CALCULATE AGE:
+   - Determine the precise age of the information relative to {current_date}.
+   - Example: If today is December 28, 2025 and content shows "November 21, 2025", the age is approximately 1 month (CURRENT).
+   - Example: If today is December 28, 2025 and content shows "November 2023", the age is over 2 years (STALE).
+
+STEP 4 - APPLY STALENESS RULES:
+   - **FUTURE DATES**: Any date in the future relative to {current_date} is CURRENT. DO NOT FLAG.
+   - **CURRENT YEAR DATES**: Any date in {current_year} is CURRENT. DO NOT FLAG.
+   - **RECENT DATES**: Any date within 1 year of {current_date} (after {one_year_ago}) is CURRENT. DO NOT FLAG.
+   - **STALE DATES**: Only flag if the date is definitively OLDER than {one_year_ago}.
 
 Domain Context:
 - Description: {domain_context.get('description', '')}
@@ -36,19 +63,19 @@ Domain Context:
 Content to Analyze:
 {content_preview}
 
-Instructions:
-1. Carefully analyze the content for outdated information based on the domain context and staleness rules
-2. Look for dates, statistics, rates, deadlines, and time-sensitive information that is stale
-3. Flag any references to past years (like 2022, 2023) when they appear in contexts suggesting they are current or recent
-4. Flag statistics, rates, or data that are explicitly dated from previous years
-5. Do NOT flag valid historical references that are clearly historical (e.g., "Founded in 2020" in a company history section)
-6. Be thorough - if content mentions specific years that have passed, consider whether those references suggest the information is current when it's actually outdated
+CRITICAL RULES:
+- If you see "November" and the year is {current_year} or later, that is NEW content. DO NOT FLAG IT.
+- If you see "November 2025" and today is December 2025, that is 1 month old. DO NOT FLAG IT.
+- Only flag dates that are explicitly from years prior to {current_year - 1} or dates that are demonstrably older than {one_year_ago}.
+- Do NOT flag valid historical references that are clearly historical (e.g., "Founded in 2020" in a company history section).
+- When in doubt about a date's year, look for contextual clues in titles, headers, and surrounding text before making assumptions.
 
-Return a JSON array of issues. Each issue must be a JSON object with these exact fields:
+Return a JSON array of legitimate staleness issues. Each issue must be a JSON object with these exact fields:
 [
   {{
     "description": "Clear description of what is stale",
     "flaggedText": "The exact quote from the content that is outdated",
+    "contextExcerpt": "A three-sentence excerpt: the sentence immediately before the issue, the sentence containing the issue (with the problematic text wrapped in **bold markdown**), and the sentence immediately after. If there is no preceding or following sentence, include what is available.",
     "reasoning": "Explanation of why this is considered stale based on the rules"
   }}
 ]
@@ -100,6 +127,7 @@ IMPORTANT: Return ONLY valid JSON. Do not include any explanatory text before or
                     "id": f"issue_{uuid.uuid4().hex[:8]}",
                     "description": issue.get("description", ""),
                     "flaggedText": issue.get("flaggedText", ""),
+                    "contextExcerpt": issue.get("contextExcerpt", ""),
                     "reasoning": issue.get("reasoning", ""),
                     "status": "open"
                 })

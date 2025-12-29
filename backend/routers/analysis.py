@@ -2,14 +2,18 @@ from fastapi import APIRouter, HTTPException, status, Depends, BackgroundTasks
 from fastapi.responses import StreamingResponse
 from models.analysis import (
     AnalysisRunCreate, AnalysisRunResponse, AnalysisStartResponse,
-    AnalysisRunSummary, IssueUpdate, ManualTask, IssueWithContext
+    AnalysisRunSummary, IssueUpdate, ManualTask, IssueWithContext,
+    SuggestedSource
 )
 from auth.dependencies import get_current_user
 from database import get_database
 from services.extractor import extract_content
 from services.detector import detect_stale_content
+from services.research import research_service
 from bson import ObjectId
 from datetime import datetime
+from typing import List
+from pydantic import BaseModel
 import csv
 import io
 
@@ -31,6 +35,12 @@ async def process_analysis(run_id: str, urls: list, domain_context: dict):
             results.append({
                 "url": url,
                 "title": "Failed to Access",
+                "metaTitle": "",
+                "metaDescription": "",
+                "h1s": [],
+                "h2s": [],
+                "h3s": [],
+                "h4s": [],
                 "status": "failed",
                 "issueCount": 0,
                 "issues": []
@@ -49,9 +59,18 @@ async def process_analysis(run_id: str, urls: list, domain_context: dict):
         issue_count = detection.get("issue_count", 0)
         total_issues += issue_count
         
+        # Extract headers from the extraction result
+        headers = extraction.get("headers", {})
+        
         results.append({
             "url": url,
             "title": extraction["title"],
+            "metaTitle": extraction.get("meta_title", ""),
+            "metaDescription": extraction.get("meta_description", ""),
+            "h1s": headers.get("h1", []),
+            "h2s": headers.get("h2", []),
+            "h3s": headers.get("h3", []),
+            "h4s": headers.get("h4", []),
             "status": "success",
             "issueCount": issue_count,
             "issues": detection.get("issues", [])
@@ -209,9 +228,18 @@ async def delete_analysis_run(
 @router.get("/runs/{run_id}/export")
 async def export_analysis_csv(
     run_id: str,
+    urls: str = None,
     current_user: dict = Depends(get_current_user)
 ):
-    """Export analysis results as CSV"""
+    """Export analysis results as CSV with one column per issue (issue + reason combined)
+    
+    Args:
+        run_id: The analysis run ID
+        urls: Optional comma-separated list of URLs to filter by
+        current_user: Authenticated user
+    """
+    from utils.text_processing import format_issue_with_reason_for_csv
+    
     db = get_database()
     
     run = await db.analysis_runs.find_one({
@@ -225,41 +253,59 @@ async def export_analysis_csv(
             detail="Analysis run not found"
         )
     
+    # Filter results by selected URLs if provided
+    results = run.get("results", [])
+    if urls:
+        selected_urls = [url.strip() for url in urls.split(",")]
+        results = [result for result in results if result["url"] in selected_urls]
+    
+    # Determine max number of issues across filtered results
+    max_issues = 0
+    for result in results:
+        issue_count = len(result.get("issues", []))
+        if issue_count > max_issues:
+            max_issues = issue_count
+    
     # Create CSV in memory
     output = io.StringIO()
-    
-    # Find max issues for column headers
-    max_issues = 0
-    for result in run.get("results", []):
-        max_issues = max(max_issues, len(result.get("issues", [])))
-    
-    # Create headers
-    headers = ["URL", "Page Title", "Issue Count"]
-    for i in range(1, max_issues + 1):
-        headers.extend([f"Issue {i} Description", f"Issue {i} Flagged Text", f"Issue {i} Reasoning"])
-    
     writer = csv.writer(output)
+    
+    # Write headers with one column per issue
+    headers = ["URL", "Page Title", "Meta Title", "Meta Description", "H1", "H2", "H3", "H4", "Status", "Issue Count"]
+    for i in range(1, max_issues + 1):
+        headers.append(f"Issue {i}")
     writer.writerow(headers)
     
-    # Write data
-    for result in run.get("results", []):
+    # Write data - one row per URL (filtered results only)
+    for result in results:
+        issues = result.get("issues", [])
+        
+        # Join multiple headers with " | " separator
+        h1_text = " | ".join(result.get("h1s", []))
+        h2_text = " | ".join(result.get("h2s", []))
+        h3_text = " | ".join(result.get("h3s", []))
+        h4_text = " | ".join(result.get("h4s", []))
+        
         row = [
             result["url"],
             result["title"],
+            result.get("metaTitle", ""),
+            result.get("metaDescription", ""),
+            h1_text,
+            h2_text,
+            h3_text,
+            h4_text,
+            result["status"],
             result["issueCount"]
         ]
         
-        issues = result.get("issues", [])
+        # Add each issue (with its reason) in a separate column
         for i in range(max_issues):
             if i < len(issues):
-                issue = issues[i]
-                row.extend([
-                    issue.get("description", ""),
-                    issue.get("flaggedText", ""),
-                    issue.get("reasoning", "")
-                ])
+                row.append(format_issue_with_reason_for_csv(issues[i]))
             else:
-                row.extend(["", "", ""])
+                # Empty column for URLs with fewer issues
+                row.append("")
         
         writer.writerow(row)
     
@@ -304,7 +350,9 @@ async def update_issue(
                     issue["status"] = update_data.status
                 if update_data.assigned_to:
                     issue["assignedTo"] = update_data.assigned_to
-                    issue["assignedAt"] = datetime.utcnow()
+                    # Only set assignedAt if it's not already set (first assignment)
+                    if "assignedAt" not in issue or issue["assignedAt"] is None:
+                        issue["assignedAt"] = datetime.utcnow()
                 if update_data.google_doc_url:
                     issue["googleDocUrl"] = update_data.google_doc_url
                 if update_data.due_date:
@@ -403,6 +451,121 @@ async def create_manual_task(
             }]
         }]
     }
+
+
+class SaveSourcesRequest(BaseModel):
+    sources: List[SuggestedSource]
+
+
+@router.post("/runs/{run_id}/issues/{issue_id}/research")
+async def research_issue(
+    run_id: str,
+    issue_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Trigger AI research to find authoritative sources for an issue"""
+    db = get_database()
+    
+    # Get the run and find the issue
+    run = await db.analysis_runs.find_one({
+        "_id": ObjectId(run_id),
+        "user_id": ObjectId(current_user["id"])
+    })
+    
+    if not run:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Analysis run not found"
+        )
+    
+    # Find the issue
+    issue_data = None
+    for result in run.get("results", []):
+        for issue in result.get("issues", []):
+            if issue["id"] == issue_id:
+                issue_data = issue
+                break
+        if issue_data:
+            break
+    
+    if not issue_data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Issue not found"
+        )
+    
+    # Convert to Issue model
+    from models.analysis import Issue, DomainContext
+    issue_obj = Issue(
+        id=issue_data["id"],
+        description=issue_data["description"],
+        flaggedText=issue_data["flaggedText"],
+        reasoning=issue_data["reasoning"],
+        status=issue_data.get("status", "open")
+    )
+    
+    context_obj = DomainContext(
+        description=run["domain_context"]["description"],
+        entityTypes=run["domain_context"]["entityTypes"],
+        stalenessRules=run["domain_context"]["stalenessRules"]
+    )
+    
+    # Perform research
+    sources = await research_service.research_issue(issue_obj, context_obj)
+    
+    return {
+        "sources": [source.dict(by_alias=True) for source in sources]
+    }
+
+
+@router.post("/runs/{run_id}/issues/{issue_id}/sources")
+async def save_issue_sources(
+    run_id: str,
+    issue_id: str,
+    request: SaveSourcesRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Save selected sources to an issue"""
+    db = get_database()
+    
+    run = await db.analysis_runs.find_one({
+        "_id": ObjectId(run_id),
+        "user_id": ObjectId(current_user["id"])
+    })
+    
+    if not run:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Analysis run not found"
+        )
+    
+    # Find and update the issue
+    updated = False
+    for result in run.get("results", []):
+        for issue in result.get("issues", []):
+            if issue["id"] == issue_id:
+                # Convert sources to dict format for storage
+                issue["suggestedSources"] = [
+                    source.dict(by_alias=True) for source in request.sources
+                ]
+                updated = True
+                break
+        if updated:
+            break
+    
+    if not updated:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Issue not found"
+        )
+    
+    # Save updated run
+    await db.analysis_runs.update_one(
+        {"_id": ObjectId(run_id)},
+        {"$set": {"results": run["results"]}}
+    )
+    
+    return {"message": "Sources saved successfully", "count": len(request.sources)}
     
     result = await db.analysis_runs.insert_one(task_doc)
     

@@ -58,8 +58,10 @@ async def extract_content(url: str) -> dict:
                 "error": "Failed - Unable to Access: Invalid response format"
             }
         
-        # Get title from metadata or markdown
+        # Get title and meta description from metadata or markdown
         title = metadata.get('title', '') if isinstance(metadata, dict) else ''
+        meta_description = metadata.get('description', '') if isinstance(metadata, dict) else ''
+        
         if not title and markdown_content:
             # Try to extract title from markdown (first h1)
             title_match = re.search(r'^#\s+(.+)$', markdown_content, re.MULTILINE)
@@ -68,6 +70,21 @@ async def extract_content(url: str) -> dict:
         
         if not title:
             title = "Untitled Page"
+        
+        # Extract H1-H4 headers from markdown
+        headers = {
+            "h1": [],
+            "h2": [],
+            "h3": [],
+            "h4": []
+        }
+        
+        if markdown_content:
+            # Extract all headers using regex
+            headers["h1"] = re.findall(r'^#\s+(.+)$', markdown_content, re.MULTILINE)
+            headers["h2"] = re.findall(r'^##\s+(.+)$', markdown_content, re.MULTILINE)
+            headers["h3"] = re.findall(r'^###\s+(.+)$', markdown_content, re.MULTILINE)
+            headers["h4"] = re.findall(r'^####\s+(.+)$', markdown_content, re.MULTILINE)
         
         # Use markdown content for LLM analysis (preserves structure better than plain text)
         content = markdown_content if markdown_content else html_content
@@ -89,7 +106,7 @@ async def extract_content(url: str) -> dict:
                 data_rows = match.group(2)
                 
                 # Parse header
-                headers = [cell.strip() for cell in header_row.split('|') if cell.strip()]
+                table_headers = [cell.strip() for cell in header_row.split('|') if cell.strip()]
                 
                 # Parse data rows
                 rows = []
@@ -98,8 +115,8 @@ async def extract_content(url: str) -> dict:
                     if cells:
                         rows.append(cells)
                 
-                if headers and rows:
-                    tables.append([headers] + rows)
+                if table_headers and rows:
+                    tables.append([table_headers] + rows)
         
         # Clean content - normalize whitespace but keep structure
         content = re.sub(r'\n{3,}', '\n\n', content.strip())
@@ -107,6 +124,9 @@ async def extract_content(url: str) -> dict:
         return {
             "status": "success",
             "title": title,
+            "meta_title": title,  # Meta title is typically the same as page title
+            "meta_description": meta_description,
+            "headers": headers,
             "content": content,
             "tables": tables
         }

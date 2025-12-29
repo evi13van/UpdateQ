@@ -6,7 +6,7 @@ import { apiService, AnalysisRun } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Trash2, Eye, Calendar, FileText, History } from 'lucide-react';
+import { Trash2, Eye, Calendar, FileText, History, RotateCcw } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'react-hot-toast';
 
@@ -116,9 +116,19 @@ export default function HistoryPage() {
                         <Eye className="h-4 w-4 mr-2" />
                         View
                       </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
+                      <Link href={`/analyze?source_id=${run.id}`} onClick={(e) => e.stopPropagation()}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10"
+                          title="Rerun this analysis with the same configuration"
+                        >
+                          <RotateCcw className="h-4 w-4" />
+                        </Button>
+                      </Link>
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         className="text-slate-400 hover:text-red-400 hover:bg-red-500/10"
                         onClick={(e) => handleDelete(run.id, e)}
                       >
