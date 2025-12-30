@@ -50,3 +50,10 @@ out/
 # Misc
 .DS_Store
 *.pem
+
+# Security audit reports
+pip_audit_output.txt
+pip_audit_report.json
+pip_audit_report_fixed.json
+safety_report.json
+backend/=*

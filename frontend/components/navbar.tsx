@@ -12,12 +12,19 @@ const Navbar = () => {
   const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  // Ensure component is mounted before accessing localStorage
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Check for auth state using token
   useEffect(() => {
+    if (!mounted) return;
     const token = localStorage.getItem('updateq_token');
     setIsLoggedIn(!!token);
-  }, [pathname]);
+  }, [pathname, mounted]);
 
   const handleLogout = () => {
     localStorage.removeItem('updateq_token');

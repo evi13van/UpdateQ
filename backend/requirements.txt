@@ -1,10 +1,21 @@
-fastapi==0.115.0
-uvicorn[standard]==0.32.0
-motor==3.6.0
+# Core Framework - Updated for security fixes
+fastapi>=0.115.6
+uvicorn[standard]>=0.32.0
+
+# Database
+motor>=3.6.0
+
+# Data Validation
 pydantic>=2.10.0
 pydantic-settings>=2.6.0
-python-jose[cryptography]==3.3.0
-passlib[argon2]==1.7.4
-python-multipart==0.0.12
+
+# Authentication & Security
+# Updated to fix CVE-2024-33663 and CVE-2024-33664
+python-jose[cryptography]>=3.5.0
+passlib[argon2]>=1.7.4
+# Updated to fix CVE-2024-53981
+python-multipart>=0.0.21
+
+# AI & External Services
 anthropic>=0.40.0
-firecrawl-py==0.0.16
+firecrawl-py>=0.0.16

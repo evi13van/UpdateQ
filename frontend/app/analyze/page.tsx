@@ -341,9 +341,10 @@ export default function AnalyzePage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="stalenessRules">What makes information stale?</Label>
+                  <span className="text-xs text-muted-foreground">Use natural language rules (e.g., 'older than 5 years')</span>
                   <Textarea
                     id="stalenessRules"
-                    placeholder="e.g., Rates older than 1 month, references to 2022 or earlier, expired deadlines"
+                    placeholder="Example: Content older than 6 months, or references to pre-2024 data."
                     value={stalenessRules}
                     onChange={(e) => handleFieldChange('stalenessRules', e.target.value)}
                     disabled={isSubmitting}

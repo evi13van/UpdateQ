@@ -22,6 +22,11 @@ class ResearchService:
         """
         current_date = datetime.now().strftime("%B %d, %Y")
         
+        # Sanitize inputs to prevent prompt injection
+        clean_description = issue.description[:500].replace('"', ' ').replace('\n', ' ')
+        clean_text = issue.flagged_text[:500].replace('"', ' ').replace('\n', ' ')
+        clean_reasoning = issue.reasoning[:500].replace('"', ' ').replace('\n', ' ')
+        
         prompt = f"""You are a research assistant helping to find current, authoritative information.
 
 Current Date: {current_date}
@@ -32,9 +37,9 @@ Domain Context:
 - Staleness Rules: {context.staleness_rules}
 
 Issue Detected:
-- Description: {issue.description}
-- Flagged Text: "{issue.flagged_text}"
-- Reasoning: {issue.reasoning}
+- Description: {clean_description}
+- Flagged Text: {clean_text}
+- Reasoning: {clean_reasoning}
 
 Task: Generate a specific, targeted search query to find the most current, official data that would resolve this issue.
 

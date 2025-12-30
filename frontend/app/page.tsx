@@ -19,8 +19,15 @@ export default function HomePage() {
   const [allIssues, setAllIssues] = useState<Array<{ runId: string; url: string; pageTitle: string; issue: Issue }>>([]);
   const [writers, setWriters] = useState<Writer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+    
     const loadData = async () => {
       const user = await apiService.getCurrentUser();
       if (user) {
@@ -46,7 +53,15 @@ export default function HomePage() {
       }
     };
     loadData();
-  }, []);
+  }, [mounted]);
+
+  if (!mounted || loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
+        <div className="text-slate-400">Loading...</div>
+      </div>
+    );
+  }
 
   if (isLoggedIn) {
     // Calculate issue statistics

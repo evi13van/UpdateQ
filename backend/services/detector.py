@@ -18,9 +18,11 @@ async def detect_stale_content(url: str, content: str, domain_context: dict) -> 
         print(f"[DEBUG] Initializing Claude client...")
         client = Anthropic(api_key=settings.claude_api_key)
         
+        # Get staleness rules from user configuration
+        staleness_rules = domain_context.get('stalenessRules', '')
+        
         current_date = datetime.now().strftime("%B %d, %Y")
         current_year = datetime.now().year
-        one_year_ago = datetime.now().replace(year=datetime.now().year - 1).strftime("%B %d, %Y")
         
         # Construct prompt
         content_preview = content[:8000] if len(content) > 8000 else content
@@ -31,8 +33,6 @@ async def detect_stale_content(url: str, content: str, domain_context: dict) -> 
 ANALYSIS PARAMETERS:
 - Current Reference Date: {current_date}
 - Current Year: {current_year}
-- Staleness Threshold: Content is stale if older than 1 year from {current_date}
-- One Year Ago Date: {one_year_ago}
 
 STRICT EVALUATION PROCESS (Follow this order):
 
@@ -49,26 +49,32 @@ STEP 3 - CALCULATE AGE:
    - Example: If today is December 28, 2025 and content shows "November 21, 2025", the age is approximately 1 month (CURRENT).
    - Example: If today is December 28, 2025 and content shows "November 2023", the age is over 2 years (STALE).
 
-STEP 4 - APPLY STALENESS RULES:
+STEP 4 - APPLY USER'S STALENESS RULES USING NATURAL LANGUAGE UNDERSTANDING:
+   - The user has specified these staleness rules: "{staleness_rules}"
+   - Interpret these rules using natural language understanding relative to {current_date}.
+   - Examples of rule interpretation:
+     * "older than 6 months" means content dated before approximately 6 months ago from {current_date}
+     * "older than 2 years" means content dated before approximately 2 years ago from {current_date}
+     * "immediate" or "current only" means any past date should be flagged
+     * "pre-2024 data" means content referencing years before 2024
    - **FUTURE DATES**: Any date in the future relative to {current_date} is CURRENT. DO NOT FLAG.
-   - **CURRENT YEAR DATES**: Any date in {current_year} is CURRENT. DO NOT FLAG.
-   - **RECENT DATES**: Any date within 1 year of {current_date} (after {one_year_ago}) is CURRENT. DO NOT FLAG.
-   - **STALE DATES**: Only flag if the date is definitively OLDER than {one_year_ago}.
+   - **RECENT DATES**: Apply the user's natural language rules to determine if content is recent enough.
+   - **STALE DATES**: Flag content that violates the user's staleness rules based on your semantic understanding.
 
 Domain Context:
 - Description: {domain_context.get('description', '')}
 - Entity Types to Check: {domain_context.get('entityTypes', '')}
-- Staleness Rules: {domain_context.get('stalenessRules', '')}
+- Staleness Rules: {staleness_rules}
 
 Content to Analyze:
 {content_preview}
 
 CRITICAL RULES:
 - If you see "November" and the year is {current_year} or later, that is NEW content. DO NOT FLAG IT.
-- If you see "November 2025" and today is December 2025, that is 1 month old. DO NOT FLAG IT.
-- Only flag dates that are explicitly from years prior to {current_year - 1} or dates that are demonstrably older than {one_year_ago}.
+- Interpret the user's staleness rules ("{staleness_rules}") semantically - understand phrases like "older than X months/years" relative to {current_date}.
 - Do NOT flag valid historical references that are clearly historical (e.g., "Founded in 2020" in a company history section).
 - When in doubt about a date's year, look for contextual clues in titles, headers, and surrounding text before making assumptions.
+- Respect the user's natural language staleness rules strictly by understanding their intent.
 
 Return a JSON array of legitimate staleness issues. Each issue must be a JSON object with these exact fields:
 [

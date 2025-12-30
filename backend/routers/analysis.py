@@ -451,6 +451,17 @@ async def create_manual_task(
             }]
         }]
     }
+    
+    result = await db.analysis_runs.insert_one(task_doc)
+    
+    return {
+        "id": task_doc["results"][0]["issues"][0]["id"],
+        "title": task_data.title,
+        "status": "in_progress",
+        "assignedTo": task_data.writer_name,
+        "googleDocUrl": task_data.google_doc_url,
+        "dueDate": task_data.due_date
+    }
 
 
 class SaveSourcesRequest(BaseModel):
@@ -566,14 +577,3 @@ async def save_issue_sources(
     )
     
     return {"message": "Sources saved successfully", "count": len(request.sources)}
-    
-    result = await db.analysis_runs.insert_one(task_doc)
-    
-    return {
-        "id": task_doc["results"][0]["issues"][0]["id"],
-        "title": task_data.title,
-        "status": "in_progress",
-        "assignedTo": task_data.writer_name,
-        "googleDocUrl": task_data.google_doc_url,
-        "dueDate": task_data.due_date
-    }
