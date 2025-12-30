@@ -93,26 +93,34 @@ async function apiCall<T>(
   options: RequestInit = {}
 ): Promise<T> {
   const token = getAuthToken();
-  const headers: HeadersInit = {
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    ...options.headers,
+    ...(options.headers as Record<string, string>),
   };
 
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  try {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
+      headers,
+    });
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    // Handle network errors specifically
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new Error('Unable to connect to server. Please ensure the backend is running on port 8000.');
+    }
+    throw error;
   }
-
-  return response.json();
 }
 
 // API Service Class
@@ -200,6 +208,15 @@ class ApiService {
 
   isAuthenticated(): boolean {
     return getAuthToken() !== null;
+  }
+
+  // Health Check
+  async checkBackendHealth(): Promise<{ status: string; database: string }> {
+    const response = await fetch('http://localhost:8000/healthz');
+    if (!response.ok) {
+      throw new Error('Backend health check failed');
+    }
+    return response.json();
   }
 
   // Analysis

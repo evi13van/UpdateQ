@@ -10,32 +10,59 @@ async def extract_content(url: str) -> dict:
     Returns dict with status, title, content, or error
     """
     try:
+        print(f"\n[EXTRACTOR] Starting extraction for URL: {url}")
+        
         # Initialize Firecrawl client
         app = FirecrawlApp(api_key=settings.firecrawl_api_key)
+        print(f"[EXTRACTOR] Firecrawl client initialized")
         
         # Scrape the page with Firecrawl (run in executor since SDK may be sync)
         # Firecrawl handles JS-rendered content automatically
         loop = asyncio.get_event_loop()
+        print(f"[EXTRACTOR] Calling Firecrawl API for {url}...")
         result = await loop.run_in_executor(
             None,
-            lambda: app.scrape_url(url, params={
-                "formats": ["markdown", "html"],
-                "includeTags": ["title", "h1", "h2", "h3", "h4", "h5", "h6", "p", "table", "td", "th", "li", "ul", "ol"],
-                "excludeTags": ["script", "style", "nav", "footer", "header"]
-            })
+            lambda: app.scrape(
+                url,
+                formats=["markdown", "html"],
+                include_tags=["title", "h1", "h2", "h3", "h4", "h5", "h6", "p", "table", "td", "th", "li", "ul", "ol"],
+                exclude_tags=["script", "style", "nav", "footer", "header"]
+            )
         )
+        print(f"[EXTRACTOR] Firecrawl API call completed for {url}")
+        print(f"[EXTRACTOR] Result type: {type(result)}")
+        print(f"[EXTRACTOR] Result attributes: {dir(result) if hasattr(result, '__dict__') else 'N/A'}")
         
-        # Handle different response formats
-        if isinstance(result, dict):
-            # Check for error in response
-            if result.get('error'):
+        # Handle new Document object format (Firecrawl v2)
+        if hasattr(result, 'markdown') or hasattr(result, 'html'):
+            # New Document object format
+            print(f"[EXTRACTOR] Using Document object format")
+            markdown_content = getattr(result, 'markdown', '')
+            html_content = getattr(result, 'html', '')
+            metadata = getattr(result, 'metadata', {})
+            
+            # Check if there's an error attribute
+            if hasattr(result, 'error') and result.error:
+                error_detail = str(result.error)
+                print(f"[EXTRACTOR ERROR] Firecrawl returned error: {error_detail}")
                 return {
                     "status": "failed",
-                    "error": f"Failed - Unable to Access: {result.get('error', 'Unknown error')}"
+                    "error": f"Failed - Unable to Access: {error_detail}"
+                }
+        elif isinstance(result, dict):
+            # Old dict format (fallback)
+            print(f"[EXTRACTOR] Using dict format")
+            # Check for error in response
+            if result.get('error'):
+                error_detail = result.get('error', 'Unknown error')
+                print(f"[EXTRACTOR ERROR] Firecrawl returned error: {error_detail}")
+                return {
+                    "status": "failed",
+                    "error": f"Failed - Unable to Access: {error_detail}"
                 }
             
             # Extract data from Firecrawl response
-            data = result.get('data', result)  # Some responses have data wrapper
+            data = result.get('data', result)
             if not data:
                 return {
                     "status": "failed",
@@ -48,11 +75,11 @@ async def extract_content(url: str) -> dict:
                 html_content = data.get('html', '')
                 metadata = data.get('metadata', {})
             else:
-                # Direct format
                 markdown_content = result.get('markdown', '')
                 html_content = result.get('html', '')
                 metadata = result.get('metadata', {})
         else:
+            print(f"[EXTRACTOR ERROR] Unknown response format: {type(result)}")
             return {
                 "status": "failed",
                 "error": "Failed - Unable to Access: Invalid response format"
@@ -133,6 +160,12 @@ async def extract_content(url: str) -> dict:
             
     except Exception as e:
         error_msg = str(e)
+        print(f"\n[EXTRACTOR EXCEPTION] Error extracting {url}")
+        print(f"[EXTRACTOR EXCEPTION] Exception type: {type(e).__name__}")
+        print(f"[EXTRACTOR EXCEPTION] Exception message: {error_msg}")
+        import traceback
+        print(f"[EXTRACTOR EXCEPTION] Traceback:\n{traceback.format_exc()}")
+        
         # Handle specific Firecrawl errors
         if "timeout" in error_msg.lower() or "timed out" in error_msg.lower():
             return {

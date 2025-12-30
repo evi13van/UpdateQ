@@ -51,6 +51,18 @@ export default function AnalyzePage() {
       return;
     }
 
+    // Check backend connectivity
+    const checkBackend = async () => {
+      try {
+        await apiService.checkBackendHealth();
+      } catch (error) {
+        toast.error('Cannot connect to backend. Please start the server on port 8000.', {
+          duration: 5000,
+        });
+      }
+    };
+    checkBackend();
+
     // Load saved contexts
     const contexts = apiService.getDomainContexts();
     setSavedContexts(contexts);
@@ -341,7 +353,6 @@ export default function AnalyzePage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="stalenessRules">What makes information stale?</Label>
-                  <span className="text-xs text-muted-foreground">Use natural language rules (e.g., 'older than 5 years')</span>
                   <Textarea
                     id="stalenessRules"
                     placeholder="Example: Content older than 6 months, or references to pre-2024 data."
@@ -350,6 +361,7 @@ export default function AnalyzePage() {
                     disabled={isSubmitting}
                     rows={3}
                   />
+                  <p className="text-xs text-muted-foreground mt-1.5">Use natural language rules (e.g., 'older than 5 years')</p>
                 </div>
               </div>
 
