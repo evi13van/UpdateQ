@@ -1,10 +1,14 @@
 from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from models.user import UserCreate, UserResponse, Token, LoginRequest
 from crud.user import create_user, get_user_by_email, verify_password
-from auth.jwt import create_access_token
+from auth.jwt import create_access_token, decode_token
 from auth.dependencies import get_current_user
+from crud.token_blacklist import blacklist_token
+from datetime import datetime
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
+security = HTTPBearer()
 
 
 @router.post("/signup", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
@@ -49,9 +53,26 @@ async def login(login_data: LoginRequest):
 
 
 @router.post("/logout")
-async def logout(current_user: dict = Depends(get_current_user)):
-    """Logout user (client-side token removal)"""
-    return {"message": "Logged out successfully"}
+async def logout(
+    current_user: dict = Depends(get_current_user),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Logout user and blacklist token"""
+    try:
+        token = credentials.credentials
+        
+        # Decode token to get expiration
+        payload = decode_token(token)
+        exp_timestamp = payload.get("exp")
+        
+        if exp_timestamp:
+            expires_at = datetime.fromtimestamp(exp_timestamp)
+            await blacklist_token(token, current_user["id"], expires_at)
+        
+        return {"message": "Logged out successfully"}
+    except Exception as e:
+        # Even if blacklisting fails, return success for client-side cleanup
+        return {"message": "Logged out successfully"}
 
 
 @router.get("/me", response_model=UserResponse)

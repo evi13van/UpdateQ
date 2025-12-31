@@ -1,0 +1,10 @@
+URL,Page Title,Issue Description,Severity,Category
+https://example.com/products,Product Overview Page,Update pricing information for Q1 2025,high,pricing
+https://example.com/products,Product Overview Page,Fix broken image link in hero section,medium,technical
+https://example.com/products,Product Overview Page,Update copyright year to 2025,low,legal
+https://example.com/about,About Us Page,Add new team member bio for Sarah Johnson,high,content
+https://example.com/about,About Us Page,Update company mission statement,medium,content
+https://example.com/contact,Contact Page,Update office address and phone number,high,contact-info
+https://example.com/contact,Contact Page,Add new support email address,medium,contact-info
+https://example.com/blog/article-1,Blog Post: AI Trends,Update statistics from 2023 to 2024,high,statistics
+https://example.com/blog/article-1,Blog Post: AI Trends,Add reference to recent study,low,references

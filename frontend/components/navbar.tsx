@@ -6,6 +6,8 @@ import { usePathname, useRouter } from 'next/navigation';
 import { LayoutDashboard, PlusCircle, History, Settings, LogOut, Menu, X, ClipboardList } from 'lucide-react';
 import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
+import { apiService } from '@/lib/api';
+import { toast } from 'react-hot-toast';
 
 const Navbar = () => {
   const pathname = usePathname();
@@ -26,10 +28,16 @@ const Navbar = () => {
     setIsLoggedIn(!!token);
   }, [pathname, mounted]);
 
-  const handleLogout = () => {
-    localStorage.removeItem('updateq_token');
-    localStorage.removeItem('updateq_user');
-    router.push('/login');
+  const handleLogout = async () => {
+    try {
+      await apiService.logout();
+      toast.success('Logged out successfully');
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Still clear local storage even if API call fails
+    } finally {
+      router.push('/login');
+    }
   };
 
   if (pathname === '/login' || pathname === '/register') return null;

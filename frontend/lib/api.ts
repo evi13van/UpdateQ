@@ -109,8 +109,16 @@ async function apiCall<T>(
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      // Handle 401 Unauthorized - token expired or revoked
+      if (response.status === 401) {
+        removeAuthToken();
+        if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
+          window.location.href = '/login';
+        }
+      }
+      
+      const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
+      throw new Error(errorData.detail || errorData.error || `HTTP error! status: ${response.status}`);
     }
 
     return response.json();

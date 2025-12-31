@@ -3,6 +3,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from auth.jwt import verify_token
 from database import get_database
 from bson import ObjectId
+from crud.token_blacklist import is_token_blacklisted
 
 security = HTTPBearer()
 
@@ -13,6 +14,14 @@ async def get_current_user(
     """Dependency to get current authenticated user"""
     try:
         token = credentials.credentials
+        
+        # Check if token is blacklisted
+        if await is_token_blacklisted(token):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token has been revoked"
+            )
+        
         user_id = verify_token(token)
         
         db = get_database()

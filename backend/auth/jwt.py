@@ -45,3 +45,12 @@ def verify_token(token: str) -> str:
         return user_id
     except JWTError:
         raise ValueError("Could not validate credentials")
+
+
+def decode_token(token: str) -> dict:
+    """Decode JWT token and return full payload"""
+    try:
+        payload = jwt.decode(token, settings.jwt_secret, algorithms=["HS256"])
+        return payload
+    except JWTError:
+        raise ValueError("Could not validate credentials")
