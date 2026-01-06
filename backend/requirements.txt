@@ -8,6 +8,7 @@ motor>=3.6.0
 # Data Validation
 pydantic[email]>=2.10.0
 pydantic-settings>=2.6.0
+email-validator>=2.0.0
 
 # Authentication & Security
 # Updated to fix CVE-2024-33663 and CVE-2024-33664
