@@ -59,7 +59,7 @@ UpdateQ/
 
 6. **Start the backend server:**
    ```bash
-   uvicorn main:app --reload --port 8000
+   python main.py
    ```
 
    The API will be available at `http://localhost:8000`

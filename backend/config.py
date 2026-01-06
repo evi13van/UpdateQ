@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import List
+import sys
 
 
 class Settings(BaseSettings):
@@ -21,4 +22,22 @@ class Settings(BaseSettings):
         return [origin.strip() for origin in self.cors_origins.split(",")]
 
 
-settings = Settings()
+# Add diagnostic logging for configuration loading
+try:
+    print("🔧 Loading configuration...", file=sys.stderr)
+    settings = Settings()
+    print(f"✅ Configuration loaded successfully", file=sys.stderr)
+    print(f"   - App Environment: {settings.app_env}", file=sys.stderr)
+    print(f"   - Port: {settings.port}", file=sys.stderr)
+    print(f"   - MongoDB URI: {'***' if settings.mongodb_uri else 'MISSING'}", file=sys.stderr)
+    print(f"   - JWT Secret: {'***' if settings.jwt_secret else 'MISSING'}", file=sys.stderr)
+    print(f"   - Claude API Key: {'***' if settings.claude_api_key else 'MISSING'}", file=sys.stderr)
+    print(f"   - Firecrawl API Key: {'***' if settings.firecrawl_api_key else 'MISSING'}", file=sys.stderr)
+    print(f"   - Perplexity API Key: {'***' if settings.perplexity_api_key else 'MISSING'}", file=sys.stderr)
+    print(f"   - CORS Origins: {settings.cors_origins}", file=sys.stderr)
+except Exception as e:
+    print(f"❌ FATAL: Failed to load configuration", file=sys.stderr)
+    print(f"   Error Type: {type(e).__name__}", file=sys.stderr)
+    print(f"   Error Message: {str(e)}", file=sys.stderr)
+    print(f"   This usually means required environment variables are missing", file=sys.stderr)
+    raise
