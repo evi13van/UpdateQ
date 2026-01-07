@@ -318,3 +318,4 @@ For issues or questions:
   - Perplexity integration
   - CSV export with sources
   - Research drawer UI
+  
