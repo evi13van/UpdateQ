@@ -16,17 +16,20 @@ from typing import List
 from pydantic import BaseModel
 import csv
 import io
+from utils.memory_monitor import memory_monitor
 
 router = APIRouter(prefix="/api/v1/analysis", tags=["analysis"])
 
 
 async def process_analysis(run_id: str, urls: list, domain_context: dict):
     """Background task to process URL analysis"""
+    memory_monitor.log_memory(f"ANALYSIS BATCH START - {len(urls)} URLs")
     db = get_database()
     results = []
     total_issues = 0
     
-    for url in urls:
+    for idx, url in enumerate(urls, 1):
+        memory_monitor.log_memory(f"ANALYSIS URL {idx}/{len(urls)} - {url[:50]}")
         # Extract content
         extraction = await extract_content(url)
         
@@ -75,6 +78,11 @@ async def process_analysis(run_id: str, urls: list, domain_context: dict):
             "issueCount": issue_count,
             "issues": detection.get("issues", [])
         })
+        
+        # Check memory after each URL
+        memory_monitor.check_memory_threshold(threshold_mb=400)
+    
+    memory_monitor.log_memory(f"ANALYSIS BATCH END - {len(urls)} URLs processed")
     
     # Update run with results
     await db.analysis_runs.update_one(

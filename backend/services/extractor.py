@@ -2,6 +2,7 @@ from firecrawl import FirecrawlApp
 from config import settings
 import re
 import asyncio
+from utils.memory_monitor import memory_monitor
 
 
 async def extract_content(url: str) -> dict:
@@ -13,11 +14,13 @@ async def extract_content(url: str) -> dict:
     app = None
     
     try:
+        memory_monitor.log_memory(f"EXTRACTOR START - {url[:50]}")
         print(f"\n[EXTRACTOR] Starting extraction for URL: {url}")
         
         # Initialize Firecrawl client
         app = FirecrawlApp(api_key=settings.firecrawl_api_key)
         print(f"[EXTRACTOR] Firecrawl client initialized")
+        memory_monitor.log_memory(f"EXTRACTOR after client init")
         
         # Scrape the page with Firecrawl (run in executor since SDK may be sync)
         # Firecrawl handles JS-rendered content automatically
@@ -119,11 +122,18 @@ async def extract_content(url: str) -> dict:
         # Use markdown content for LLM analysis (preserves structure better than plain text)
         content = markdown_content if markdown_content else html_content
         
+        # Memory monitoring - check content size
+        content_size_mb = len(content) / 1024 / 1024
+        print(f"[MEMORY] Content size: {content_size_mb:.2f}MB")
+        if content_size_mb > 1.0:
+            print(f"[MEMORY] ⚠️ WARNING: Large content extracted ({content_size_mb:.2f}MB)")
+        
         # Debug logging
         print(f"[DEBUG] Extracted content for {url}:")
         print(f"[DEBUG] Title: {title}")
         print(f"[DEBUG] Content length: {len(content)}")
         print(f"[DEBUG] Content preview (first 500 chars): {content[:500]}")
+        memory_monitor.log_memory(f"EXTRACTOR after content extraction")
         
         # Extract tables from markdown if present
         tables = []
@@ -198,3 +208,4 @@ async def extract_content(url: str) -> dict:
     finally:
         # Ensure client is cleaned up
         app = None
+        memory_monitor.log_memory(f"EXTRACTOR END - {url[:50]}")

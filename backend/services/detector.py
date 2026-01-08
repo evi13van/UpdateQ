@@ -4,6 +4,7 @@ from datetime import datetime
 import json
 import uuid
 import re
+from utils.memory_monitor import memory_monitor
 
 def is_heading_only(text: str) -> bool:
     """
@@ -135,12 +136,14 @@ async def detect_stale_content(url: str, content: str, domain_context: dict) -> 
     Analyze content for factual decay using Claude API
     Returns dict with issues array
     """
+    memory_monitor.log_memory(f"DETECTOR START - {url[:50]}")
     print(f"[DEBUG] detect_stale_content called for {url}")
     print(f"[DEBUG] Content length: {len(content)}")
     print(f"[DEBUG] Domain context: {domain_context}")
     
     # Create Claude client per request for proper resource management
     client = Anthropic(api_key=settings.claude_api_key)
+    memory_monitor.log_memory(f"DETECTOR after Claude client init")
     
     try:
         print(f"[DEBUG] Initializing Claude client...")
@@ -262,6 +265,8 @@ IMPORTANT: Return ONLY valid JSON. Do not include any explanatory text before or
         # Call Claude API
         print(f"[DEBUG] Calling Claude API...")
         print(f"[DEBUG] Prompt length: {len(prompt)}")
+        memory_monitor.log_memory(f"DETECTOR before Claude API call")
+        
         message = client.messages.create(
             model="claude-3-haiku-20240307",
             max_tokens=2000,
@@ -270,6 +275,7 @@ IMPORTANT: Return ONLY valid JSON. Do not include any explanatory text before or
             ]
         )
         print(f"[DEBUG] Claude API call successful")
+        memory_monitor.log_memory(f"DETECTOR after Claude API call")
         
         # Parse response
         response_text = message.content[0].text.strip()
@@ -387,3 +393,4 @@ IMPORTANT: Return ONLY valid JSON. Do not include any explanatory text before or
     finally:
         # Ensure client is cleaned up
         client = None
+        memory_monitor.log_memory(f"DETECTOR END - {url[:50]}")

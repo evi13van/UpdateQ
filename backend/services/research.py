@@ -6,6 +6,7 @@ from typing import List
 from datetime import datetime
 import json
 from urllib.parse import urlparse
+from utils.memory_monitor import memory_monitor
 
 
 class ResearchService:
@@ -52,7 +53,9 @@ Guidelines:
 Return ONLY the search query text, nothing else."""
 
         # Create client with context manager for proper cleanup
+        memory_monitor.log_memory("RESEARCH generate_query START")
         claude_client = Anthropic(api_key=settings.claude_api_key)
+        memory_monitor.log_memory("RESEARCH after Claude client init")
         
         try:
             message = claude_client.messages.create(
@@ -73,6 +76,7 @@ Return ONLY the search query text, nothing else."""
             # Anthropic client doesn't have explicit close, but we let it go out of scope
             # to ensure proper garbage collection
             claude_client = None
+            memory_monitor.log_memory("RESEARCH generate_query END")
     
     async def perform_research(self, query: str) -> List[SuggestedSource]:
         """
@@ -122,6 +126,7 @@ Limit to 3-5 highest quality sources. Return ONLY valid JSON."""
                 "return_images": False
             }
             
+            memory_monitor.log_memory("RESEARCH before Perplexity API call")
             print(f"[DEBUG] Calling Perplexity API with query: {query}")
             
             # Use context manager to ensure proper cleanup
@@ -150,6 +155,7 @@ Limit to 3-5 highest quality sources. Return ONLY valid JSON."""
                 sources = self._parse_sources_from_response(content, citations)
                 
                 print(f"[DEBUG] Parsed {len(sources)} sources")
+                memory_monitor.log_memory("RESEARCH after Perplexity API call")
                 return sources
                 
         except Exception as e:
@@ -234,6 +240,7 @@ Limit to 3-5 highest quality sources. Return ONLY valid JSON."""
         """
         Complete research workflow: generate query and perform search
         """
+        memory_monitor.log_memory(f"RESEARCH ISSUE START - {issue.id}")
         print(f"[DEBUG] Starting research for issue: {issue.id}")
         
         # Generate optimized search query
@@ -243,6 +250,7 @@ Limit to 3-5 highest quality sources. Return ONLY valid JSON."""
         sources = await self.perform_research(query)
         
         print(f"[DEBUG] Research complete. Found {len(sources)} sources")
+        memory_monitor.log_memory(f"RESEARCH ISSUE END - {issue.id}")
         return sources
 
 

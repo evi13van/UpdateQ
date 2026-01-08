@@ -21,3 +21,6 @@ python-multipart>=0.0.21
 # AI & External Services
 anthropic>=0.40.0
 firecrawl-py>=0.0.16
+
+# Monitoring & Debugging
+psutil>=5.9.0
