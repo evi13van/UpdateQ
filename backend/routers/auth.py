@@ -6,6 +6,7 @@ from auth.jwt import create_access_token, decode_token
 from auth.dependencies import get_current_user
 from crud.token_blacklist import blacklist_token
 from datetime import datetime
+import sys
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 security = HTTPBearer()
@@ -14,6 +15,7 @@ security = HTTPBearer()
 @router.post("/signup", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def signup(user_data: UserCreate):
     """Register a new user"""
+    print(f"[DEBUG] Signup endpoint hit - Email: {user_data.email}", file=sys.stderr)
     try:
         user = await create_user(user_data.email, user_data.password)
         return UserResponse(

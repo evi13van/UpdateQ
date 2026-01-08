@@ -1,10 +1,11 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from config import settings
 from database import connect_to_mongo, close_mongo_connection, get_database
 from routers import auth, analysis, writers
 import sys
+import time
 
 
 @asynccontextmanager
@@ -35,6 +36,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Add request logging middleware
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start_time = time.time()
+    print(f"[DEBUG] Incoming request: {request.method} {request.url.path}", file=sys.stderr)
+    response = await call_next(request)
+    duration = time.time() - start_time
+    print(f"[DEBUG] Response: {response.status_code} (took {duration:.2f}s)", file=sys.stderr)
+    return response
 
 # Include routers
 print("📋 Registering API routers...", file=sys.stderr)

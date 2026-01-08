@@ -103,12 +103,20 @@ async function apiCall<T>(
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const fullUrl = `${API_BASE_URL}${endpoint}`;
+    console.log('[DEBUG] API Call:', { method: options.method || 'GET', fullUrl });
+    
+    const response = await fetch(fullUrl, {
       ...options,
       headers,
     });
 
     if (!response.ok) {
+      console.error('[DEBUG] API Error:', {
+        status: response.status,
+        statusText: response.statusText,
+        url: fullUrl
+      });
       // Handle 401 Unauthorized - token expired or revoked
       if (response.status === 401) {
         removeAuthToken();
@@ -135,6 +143,12 @@ async function apiCall<T>(
 class ApiService {
   // Authentication
   async register(data: { email: string; password: string }): Promise<User> {
+    console.log('[DEBUG] Registration attempt:', {
+      apiBaseUrl: API_BASE_URL,
+      endpoint: '/auth/signup',
+      fullUrl: `${API_BASE_URL}/auth/signup`
+    });
+    
     const response = await apiCall<{ id: string; email: string; name: string }>(
       '/auth/signup',
       {
