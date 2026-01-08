@@ -126,6 +126,7 @@ async function apiCall<T>(
       }
       
       const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
+      console.error('[DEBUG] Error response body:', errorData);
       throw new Error(errorData.detail || errorData.error || `HTTP error! status: ${response.status}`);
     }
 
