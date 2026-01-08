@@ -179,13 +179,17 @@ async def get_analysis_run(
 
 
 @router.get("/runs")
-async def list_analysis_runs(current_user: dict = Depends(get_current_user)):
-    """List all analysis runs for user"""
+async def list_analysis_runs(
+    skip: int = 0,
+    limit: int = 100,
+    current_user: dict = Depends(get_current_user)
+):
+    """List all analysis runs for user with pagination"""
     db = get_database()
     
     cursor = db.analysis_runs.find(
         {"user_id": ObjectId(current_user["id"])}
-    ).sort("timestamp", -1)
+    ).sort("timestamp", -1).skip(skip).limit(limit)
     
     runs = []
     async for run in cursor:
@@ -200,7 +204,12 @@ async def list_analysis_runs(current_user: dict = Depends(get_current_user)):
             }
         })
     
-    return {"runs": runs}
+    # Also get total count for pagination purposes
+    total_runs = await db.analysis_runs.count_documents(
+        {"user_id": ObjectId(current_user["id"])}
+    )
+    
+    return {"runs": runs, "total": total_runs}
 
 
 @router.delete("/runs/{run_id}")
@@ -252,67 +261,75 @@ async def export_analysis_csv(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Analysis run not found"
         )
-    
-    # Filter results by selected URLs if provided
-    results = run.get("results", [])
-    if urls:
-        selected_urls = [url.strip() for url in urls.split(",")]
-        results = [result for result in results if result["url"] in selected_urls]
-    
-    # Determine max number of issues across filtered results
-    max_issues = 0
-    for result in results:
-        issue_count = len(result.get("issues", []))
-        if issue_count > max_issues:
-            max_issues = issue_count
-    
-    # Create CSV in memory
-    output = io.StringIO()
-    writer = csv.writer(output)
-    
-    # Write headers with one column per issue
-    headers = ["URL", "Page Title", "Meta Title", "Meta Description", "H1", "H2", "H3", "H4", "Status", "Issue Count"]
-    for i in range(1, max_issues + 1):
-        headers.append(f"Issue {i}")
-    writer.writerow(headers)
-    
-    # Write data - one row per URL (filtered results only)
-    for result in results:
-        issues = result.get("issues", [])
         
-        # Join multiple headers with " | " separator
-        h1_text = " | ".join(result.get("h1s", []))
-        h2_text = " | ".join(result.get("h2s", []))
-        h3_text = " | ".join(result.get("h3s", []))
-        h4_text = " | ".join(result.get("h4s", []))
+    async def csv_generator():
+        # Filter results by selected URLs if provided
+        results = run.get("results", [])
+        if urls:
+            selected_urls = [url.strip() for url in urls.split(",")]
+            results = [result for result in results if result["url"] in selected_urls]
         
-        row = [
-            result["url"],
-            result["title"],
-            result.get("metaTitle", ""),
-            result.get("metaDescription", ""),
-            h1_text,
-            h2_text,
-            h3_text,
-            h4_text,
-            result["status"],
-            result["issueCount"]
-        ]
+        # Determine max number of issues across filtered results
+        max_issues = 0
+        for result in results:
+            issue_count = len(result.get("issues", []))
+            if issue_count > max_issues:
+                max_issues = issue_count
         
-        # Add each issue (with its reason) in a separate column
-        for i in range(max_issues):
-            if i < len(issues):
-                row.append(format_issue_with_reason_for_csv(issues[i]))
-            else:
-                # Empty column for URLs with fewer issues
-                row.append("")
+        # Use an in-memory stream to build CSV rows
+        output = io.StringIO()
+        writer = csv.writer(output)
         
-        writer.writerow(row)
-    
-    # Return CSV
-    output.seek(0)
+        # Write headers
+        headers = ["URL", "Page Title", "Meta Title", "Meta Description", "H1", "H2", "H3", "H4", "Status", "Issue Count"]
+        for i in range(1, max_issues + 1):
+            headers.append(f"Issue {i}")
+        writer.writerow(headers)
+        
+        # Yield header row
+        output.seek(0)
+        yield output.read()
+        output.truncate(0)
+        output.seek(0)
+        
+        # Write and yield data rows
+        for result in results:
+            issues = result.get("issues", [])
+            
+            h1_text = " | ".join(result.get("h1s", []))
+            h2_text = " | ".join(result.get("h2s", []))
+            h3_text = " | ".join(result.get("h3s", []))
+            h4_text = " | ".join(result.get("h4s", []))
+            
+            row = [
+                result["url"],
+                result["title"],
+                result.get("metaTitle", ""),
+                result.get("metaDescription", ""),
+                h1_text,
+                h2_text,
+                h3_text,
+                h4_text,
+                result["status"],
+                result["issueCount"]
+            ]
+            
+            for i in range(max_issues):
+                if i < len(issues):
+                    row.append(format_issue_with_reason_for_csv(issues[i]))
+                else:
+                    row.append("")
+            
+            writer.writerow(row)
+            
+            # Yield the row
+            output.seek(0)
+            yield output.read()
+            output.truncate(0)
+            output.seek(0)
+
     return StreamingResponse(
-        iter([output.getvalue()]),
+        csv_generator(),
         media_type="text/csv",
         headers={
             "Content-Disposition": f"attachment; filename=analysis_{run_id}.csv"
@@ -389,28 +406,50 @@ async def update_issue(
 @router.get("/issues")
 async def get_all_issues(
     status: str = None,
+    skip: int = 0,
+    limit: int = 100,
     current_user: dict = Depends(get_current_user)
 ):
-    """Get all issues across all runs"""
+    """Get all issues across all runs with pagination"""
     db = get_database()
     
-    cursor = db.analysis_runs.find(
-        {"user_id": ObjectId(current_user["id"])}
-    )
+    pipeline = [
+        {"$match": {"user_id": ObjectId(current_user["id"])}},
+        {"$unwind": "$results"},
+        {"$unwind": "$results.issues"},
+        {"$addFields": {
+            "issue_obj": {
+                "runId": {"$toString": "$_id"},
+                "url": "$results.url",
+                "pageTitle": "$results.title",
+                "issue": "$results.issues"
+            }
+        }},
+        {"$replaceRoot": {"newRoot": "$issue_obj"}}
+    ]
     
-    all_issues = []
-    async for run in cursor:
-        for result in run.get("results", []):
-            for issue in result.get("issues", []):
-                if status is None or issue.get("status") == status:
-                    all_issues.append({
-                        "runId": str(run["_id"]),
-                        "url": result["url"],
-                        "pageTitle": result["title"],
-                        "issue": issue
-                    })
+    if status:
+        pipeline.append({"$match": {"issue.status": status}})
+        
+    # Pipeline for counting
+    count_pipeline = pipeline.copy()
+    count_pipeline.append({"$count": "total"})
     
-    return {"issues": all_issues}
+    # Pipeline for data
+    data_pipeline = pipeline.copy()
+    data_pipeline.append({"$skip": skip})
+    data_pipeline.append({"$limit": limit})
+    
+    # Execute pipelines
+    issues_cursor = db.analysis_runs.aggregate(data_pipeline)
+    total_cursor = db.analysis_runs.aggregate(count_pipeline)
+    
+    all_issues = await issues_cursor.to_list(length=limit)
+    
+    total_result = await total_cursor.to_list(length=1)
+    total = total_result["total"] if total_result else 0
+    
+    return {"issues": all_issues, "total": total}
 
 
 @router.post("/manual-task", status_code=status.HTTP_201_CREATED)

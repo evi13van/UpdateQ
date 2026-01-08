@@ -134,8 +134,8 @@ export const analysisAPI = {
     return response.json();
   },
   
-  listAnalysisRuns: async () => {
-    const response = await authFetch(`${API_URL}/analysis/runs`);
+  listAnalysisRuns: async (skip: number = 0, limit: number = 10) => {
+    const response = await authFetch(`${API_URL}/analysis/runs?skip=${skip}&limit=${limit}`);
     
     if (!response.ok) {
       throw new Error('Failed to list analysis runs');
@@ -192,10 +192,11 @@ export const analysisAPI = {
     return response.json();
   },
   
-  getAllIssues: async (status?: string) => {
-    const url = status 
-      ? `${API_URL}/analysis/issues?status=${status}`
-      : `${API_URL}/analysis/issues`;
+  getAllIssues: async (status?: string, skip: number = 0, limit: number = 10) => {
+    let url = `${API_URL}/analysis/issues?skip=${skip}&limit=${limit}`;
+    if (status) {
+      url += `&status=${status}`;
+    }
     
     const response = await authFetch(url);
     
