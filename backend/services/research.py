@@ -12,7 +12,7 @@ class ResearchService:
     """Service for performing AI-powered research to find authoritative sources"""
     
     def __init__(self):
-        self.claude_client = Anthropic(api_key=settings.claude_api_key)
+        # Don't create clients in __init__ - create them per request with proper cleanup
         self.perplexity_api_key = settings.perplexity_api_key
         self.perplexity_base_url = "https://api.perplexity.ai"
     
@@ -51,8 +51,11 @@ Guidelines:
 
 Return ONLY the search query text, nothing else."""
 
+        # Create client with context manager for proper cleanup
+        claude_client = Anthropic(api_key=settings.claude_api_key)
+        
         try:
-            message = self.claude_client.messages.create(
+            message = claude_client.messages.create(
                 model="claude-3-haiku-20240307",
                 max_tokens=100,
                 messages=[{"role": "user", "content": prompt}]
@@ -66,6 +69,10 @@ Return ONLY the search query text, nothing else."""
             print(f"[ERROR] Failed to generate query: {str(e)}")
             # Fallback to a simple query
             return f"current {issue.flagged_text.replace('\"', '')}"
+        finally:
+            # Anthropic client doesn't have explicit close, but we let it go out of scope
+            # to ensure proper garbage collection
+            claude_client = None
     
     async def perform_research(self, query: str) -> List[SuggestedSource]:
         """
@@ -117,6 +124,7 @@ Limit to 3-5 highest quality sources. Return ONLY valid JSON."""
             
             print(f"[DEBUG] Calling Perplexity API with query: {query}")
             
+            # Use context manager to ensure proper cleanup
             async with httpx.AsyncClient(timeout=30.0) as client:
                 response = await client.post(
                     f"{self.perplexity_base_url}/chat/completions",

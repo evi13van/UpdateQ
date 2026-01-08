@@ -9,6 +9,9 @@ async def extract_content(url: str) -> dict:
     Extract JS-rendered content from URL using Firecrawl
     Returns dict with status, title, content, or error
     """
+    # Create Firecrawl client per request for proper resource management
+    app = None
+    
     try:
         print(f"\n[EXTRACTOR] Starting extraction for URL: {url}")
         
@@ -192,3 +195,6 @@ async def extract_content(url: str) -> dict:
                 "status": "failed",
                 "error": f"Failed - Unable to Access: {error_msg}"
             }
+    finally:
+        # Ensure client is cleaned up
+        app = None

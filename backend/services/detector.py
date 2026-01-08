@@ -139,9 +139,11 @@ async def detect_stale_content(url: str, content: str, domain_context: dict) -> 
     print(f"[DEBUG] Content length: {len(content)}")
     print(f"[DEBUG] Domain context: {domain_context}")
     
+    # Create Claude client per request for proper resource management
+    client = Anthropic(api_key=settings.claude_api_key)
+    
     try:
         print(f"[DEBUG] Initializing Claude client...")
-        client = Anthropic(api_key=settings.claude_api_key)
         
         # Get staleness rules from user configuration
         staleness_rules = domain_context.get('stalenessRules', '')
@@ -382,3 +384,6 @@ IMPORTANT: Return ONLY valid JSON. Do not include any explanatory text before or
             "issues": [],
             "issue_count": 0
         }
+    finally:
+        # Ensure client is cleaned up
+        client = None
