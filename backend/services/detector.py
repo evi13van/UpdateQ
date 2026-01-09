@@ -280,10 +280,19 @@ IMPORTANT: Return ONLY valid JSON. Do not include any explanatory text before or
         # Parse response
         response_text = message.content[0].text.strip()
         
-        # Debug logging
-        print(f"[DEBUG] Claude API Response for {url}:")
-        print(f"[DEBUG] Response length: {len(response_text)}")
-        print(f"[DEBUG] First 500 chars: {response_text[:500]}")
+        # Enhanced debug logging for production diagnosis
+        import sys
+        debug_output = f"""
+{'='*80}
+[CLAUDE RESPONSE DEBUG] URL: {url[:80]}
+[CLAUDE RESPONSE DEBUG] Environment: {settings.app_env}
+[CLAUDE RESPONSE DEBUG] Response length: {len(response_text)}
+[CLAUDE RESPONSE DEBUG] Full response:
+{response_text}
+{'='*80}
+"""
+        print(debug_output, file=sys.stdout, flush=True)
+        print(debug_output, file=sys.stderr, flush=True)
         
         # Extract JSON from response
         try:
@@ -302,6 +311,27 @@ IMPORTANT: Return ONLY valid JSON. Do not include any explanatory text before or
             
             # Add unique IDs to issues with enhanced validation
             issues = []
+            rejected_reasons = {
+                'contradictory': 0,
+                'heading_only': 0,
+                'no_temporal': 0,
+                'no_evidence': 0,
+                'low_confidence': 0
+            }
+            
+            # Enhanced validation logging
+            import sys
+            validation_start = f"""
+{'='*80}
+[VALIDATION START] URL: {url[:80]}
+[VALIDATION START] Environment: {settings.app_env}
+[VALIDATION START] Raw issues from Claude: {len(issues_data)}
+[VALIDATION START] Timestamp: {datetime.now().isoformat()}
+{'='*80}
+"""
+            print(validation_start, file=sys.stdout, flush=True)
+            print(validation_start, file=sys.stderr, flush=True)
+            
             for issue in issues_data:
                 flagged_text = issue.get("flaggedText", "")
                 reasoning = issue.get("reasoning", "")
@@ -320,24 +350,28 @@ IMPORTANT: Return ONLY valid JSON. Do not include any explanatory text before or
                 ]
                 
                 if any(phrase in reasoning_lower for phrase in contradictory_phrases):
+                    rejected_reasons['contradictory'] += 1
                     print(f"[VALIDATION] Rejected - Contradictory reasoning: {description}")
                     print(f"[VALIDATION] Reasoning: {reasoning}")
                     continue
                 
                 # NEW VALIDATION 1: Reject if flaggedText is just a heading
                 if is_heading_only(flagged_text):
+                    rejected_reasons['heading_only'] += 1
                     print(f"[VALIDATION] Rejected - flaggedText is heading only: '{flagged_text}'")
                     print(f"[VALIDATION] Issue description: {description}")
                     continue
                 
                 # NEW VALIDATION 2: Require specific temporal markers in flaggedText
                 if not contains_temporal_marker(flagged_text):
+                    rejected_reasons['no_temporal'] += 1
                     print(f"[VALIDATION] Rejected - No temporal marker in flaggedText: '{flagged_text}'")
                     print(f"[VALIDATION] Issue description: {description}")
                     continue
                 
                 # NEW VALIDATION 3: Require structured evidence in reasoning
                 if not has_structured_evidence(reasoning):
+                    rejected_reasons['no_evidence'] += 1
                     print(f"[VALIDATION] Rejected - Reasoning lacks structured evidence")
                     print(f"[VALIDATION] Reasoning: {reasoning[:200]}...")
                     continue
@@ -345,8 +379,10 @@ IMPORTANT: Return ONLY valid JSON. Do not include any explanatory text before or
                 # NEW VALIDATION 4: Check confidence level
                 confidence_score = extract_confidence_from_reasoning(reasoning)
                 if confidence_score < 0.7:
+                    rejected_reasons['low_confidence'] += 1
                     print(f"[VALIDATION] Rejected - Low confidence: {confidence_score:.2f}")
                     print(f"[VALIDATION] Issue description: {description}")
+                    print(f"[VALIDATION] Reasoning snippet: {reasoning[:150]}...")
                     continue
                 
                 # All validations passed - add issue with confidence metadata
@@ -363,6 +399,29 @@ IMPORTANT: Return ONLY valid JSON. Do not include any explanatory text before or
                     "confidence": confidence_score,
                     "status": "open"
                 })
+            
+            # Log validation summary with CRITICAL prefix for production visibility
+            import sys
+            validation_summary = f"""
+{'='*80}
+[CRITICAL VALIDATION SUMMARY] URL: {url[:80]}
+[CRITICAL] Environment: {settings.app_env}
+[CRITICAL] Raw issues from Claude: {len(issues_data)}
+[CRITICAL] Issues passed validation: {len(issues)}
+[CRITICAL] Rejection breakdown:
+"""
+            for reason, count in rejected_reasons.items():
+                if count > 0:
+                    validation_summary += f"  - {reason}: {count}\n"
+            validation_summary += f"[CRITICAL] Content length analyzed: {len(content)} chars\n"
+            validation_summary += f"[CRITICAL] Content preview sent to Claude: {len(content_preview)} chars\n"
+            validation_summary += f"[CRITICAL] Claude model: claude-3-haiku-20240307\n"
+            validation_summary += f"[CRITICAL] Timestamp: {datetime.now().isoformat()}\n"
+            validation_summary += f"{'='*80}\n"
+            
+            # Write to both stdout and stderr for production visibility
+            print(validation_summary, file=sys.stdout, flush=True)
+            print(validation_summary, file=sys.stderr, flush=True)
             
             return {
                 "status": "success",
