@@ -33,7 +33,6 @@ ENV/
 # Environment files with secrets
 backend/.env
 frontend/.env
-.env
 
 # IDE
 .vscode/
@@ -57,3 +56,4 @@ pip_audit_report.json
 pip_audit_report_fixed.json
 safety_report.json
 backend/=*
+config.bat
