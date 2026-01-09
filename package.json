@@ -2,10 +2,12 @@
   "name": "template",
   "version": "1.0.0",
   "private": true,
-  "workspaces": ["frontend"],
+  "workspaces": [
+    "frontend"
+  ],
   "scripts": {
-    "dev": "npm run dev -w frontend",
-    "build": "npm run build -w frontend",
-    "start": "npm run start -w frontend"
+    "dev": "node init && npm run dev -w frontend",
+    "build": "node init && npm run build -w frontend",
+    "start": "node init && npm run start -w frontend"
   }
 }
